@@ -1,0 +1,102 @@
+---
+description: Logging obligatorio con NestJS Logger, niveles, Correlation ID, sanitización y control por env
+alwaysApply: true
+---
+
+# Cursor Rule — Logging obligatorio (NestJS Logger + niveles + Correlation ID)
+
+## Objetivo
+Estandarizar el logging en AnyJobs para que sea:
+- consistente (NestJS Logger por defecto),
+- trazable (Correlation ID en todo log),
+- configurable (debug ON/OFF por variable de entorno),
+- útil (indica módulo/clase/método y el contexto real del error).
+
+## Regla principal (hard rule)
+- Todo controller, caso de uso (application), adaptador de infraestructura (DB/external) y servicio relevante debe loguear usando **NestJS Logger** (o un wrapper que delegue 1:1 a NestJS Logger).
+- **PROHIBIDO** usar `console.log`.
+- El logging debe respetar niveles: `debug`, `log`, `warn`, `error` (y opcional `verbose` si se usa, pero no sustituye `debug`).
+
+## Correlation ID (obligatorio)
+- Cada request entrante debe tener un **Correlation ID** siempre disponible.
+- Se debe:
+  1) Aceptar un header de entrada (por ejemplo `x-correlation-id`).
+  2) Si no viene, generar uno.
+  3) Propagarlo a:
+     - todos los logs
+     - llamadas a DB
+     - llamadas a servicios externos
+- El Correlation ID debe incluirse como campo/parte del mensaje **SIEMPRE**.
+
+## Configuración por variable de entorno (debug ON/OFF)
+- Debe existir una variable de entorno que habilite/deshabilite logs detallados:
+  - ejemplo: `LOG_LEVEL=debug|log|warn|error`
+  - y/o `LOG_DEBUG_PAYLOADS=true|false`
+- En ambientes productivos el default debe ser conservador (no debug detallado).
+- **PROHIBIDO** loguear payloads completos si el debug de payloads está desactivado.
+
+## Qué se debe loguear y dónde
+### 1) Controllers (entrada/salida HTTP)
+- En `debug` (solo si debug payloads está activo):
+  - método + ruta
+  - params/query/body (sanitizado: sin secretos)
+  - usuario/actor si existe (sin datos sensibles)
+- En `log`:
+  - request recibido (resumen)
+  - response enviada (resumen) con status code y latency
+- En `warn`:
+  - cualquier condición inesperada pero recuperable (ej. reintentos, datos faltantes no críticos)
+- En `error`:
+  - cualquier excepción no esperada o error controlado crítico que termine en 5xx
+  - incluir stack trace cuando aplique
+
+### 2) Application (use-cases)
+- En `debug`:
+  - inicio/fin del caso de uso + inputs relevantes (sin PII/secretos)
+  - decisiones de flujo importantes (branching)
+- En `warn`:
+  - violaciones funcionales esperadas que no son 5xx (ej. conflicto de negocio) cuando sea relevante para observabilidad
+- En `error`:
+  - errores inesperados y excepciones
+
+### 3) Infrastructure (DB y servicios externos)
+- Cada llamada a DB o servicio externo debe loguear:
+  - En `debug` (si está activo):
+    - request/payload enviado (sanitizado)
+    - endpoint/consulta y parámetros (sin secretos)
+    - response recibida (sanitizada) y tiempos
+  - En `warn`:
+    - timeouts, reintentos, degradaciones, respuestas inesperadas pero manejadas
+  - En `error`:
+    - fallos definitivos (timeout final, 5xx de tercero, errores de DB, etc.)
+
+## Sanitización (obligatorio)
+- **PROHIBIDO** loguear:
+  - passwords, tokens, api keys, secrets, cookies sensibles
+  - PII innecesaria (documentos, tarjetas, etc.)
+- Debe existir una función utilitaria de sanitización para payloads antes de loguear.
+
+## Contexto real del origen (clase/método) (regla crítica)
+- Cada log debe indicar claramente:
+  - módulo + clase + método (o al menos clase/método)
+  - correlation id
+- Si se usa un servicio centralizado de logging (wrapper), **NO** debe “ocultar” el origen.
+  - **PROHIBIDO** que el log parezca originado por `LogService` en vez del caller real.
+  - El logger debe recibir explícitamente el contexto del caller, o capturarlo sin perder trazabilidad.
+- En logs de `error`, incluir stack trace del error original (sin reemplazarlo por uno nuevo).
+
+## Formato recomendado (consistencia)
+- Todos los logs deben incluir como mínimo:
+  - `correlationId`
+  - `context` (Clase/Servicio)
+  - `method` (cuando sea posible)
+  - `message` (humano)
+  - `metadata` (objeto con detalles sanitizados)
+
+## Checklist obligatorio (por PR)
+- [ ] Correlation ID disponible y propagado
+- [ ] Controllers loguean entrada/salida según niveles
+- [ ] Calls a DB/external loguean request/response en debug (si activo)
+- [ ] Errores logueados con `error` incluyendo stack trace original
+- [ ] No se loguean secretos/PII (sanitización aplicada)
+- [ ] El log muestra el origen real (clase/método), no el wrapper

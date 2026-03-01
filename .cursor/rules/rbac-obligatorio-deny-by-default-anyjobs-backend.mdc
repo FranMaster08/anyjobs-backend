@@ -1,0 +1,63 @@
+---
+description: RBAC obligatorio desde día 1 con política deny-by-default (guard global + decoradores por endpoint)
+alwaysApply: true
+---
+
+# Cursor Rule — RBAC obligatorio desde el día 1 (AnyJobs Backend)
+
+## Objetivo
+Garantizar que **ningún endpoint** sea accesible por defecto. Toda ruta debe estar protegida desde el primer día mediante **autenticación + autorización (RBAC)**.
+
+## Regla principal (hard rule)
+- **PROHIBIDO** exponer endpoints públicos por defecto.
+- Todo endpoint debe requerir:
+  1) **Autenticación** (identidad válida)
+  2) **Autorización** (permiso/rol requerido vía RBAC)
+- Si un endpoint es intencionalmente público (excepción rara), debe declararse explícitamente y documentarse.
+
+## Default Deny (obligatorio)
+- La política base del API debe ser **DENY ALL**:
+  - Si un endpoint no define permisos/roles requeridos, debe rechazarse automáticamente.
+- No debe existir “fallback” permisivo.
+
+## Implementación esperada (NestJS)
+- Debe existir un **guard global** que:
+  - valide autenticación (por ejemplo JWT u otro mecanismo definido)
+  - evalúe permisos RBAC
+  - aplique **deny-by-default** si no hay metadata de permisos definida
+- Cada endpoint debe declarar su requisito RBAC por decorador:
+  - ejemplo conceptual: `@RequirePermissions(...)` o `@RequireRoles(...)`
+- Los controllers **NO** deben implementar lógica RBAC manual; solo declarar metadata.
+
+## Excepciones permitidas (solo si se justifican)
+Endpoints públicos típicos (si el producto lo requiere) pueden existir, pero:
+- deben marcarse con un decorador explícito (ej. `@Public()`)
+- deben estar documentados en Swagger como públicos
+- deben estar cubiertos por E2E tests que verifiquen acceso sin auth
+
+Ejemplos comunes (solo si aplica al producto):
+- health check (`/health`)
+- auth login / registro (según estrategia)
+- swagger docs (según ambiente)
+
+## Respuestas obligatorias
+- Sin token/credenciales válidas: **401 Unauthorized**
+- Sin permiso/rol requerido: **403 Forbidden**
+- Nunca responder 200/404 “disfrazando” falta de permiso.
+
+## Logging (alineado a norma de logs)
+- En denegaciones RBAC:
+  - `warn` para 403 (usuario autenticado sin permiso)
+  - `debug` para detalles (solo si debug está activo, sin exponer secretos)
+  - `error` solo para fallas internas del sistema de auth
+
+## Testing obligatorio
+Cada endpoint debe tener E2E tests mínimos:
+- [ ] 401 cuando no hay autenticación
+- [ ] 403 cuando hay autenticación pero sin permiso
+- [ ] 2xx cuando hay autenticación y permiso válido
+
+## Prohibiciones
+- **PROHIBIDO** mergear endpoints sin decorador RBAC explícito.
+- **PROHIBIDO** deshabilitar guards en dev para “probar rápido”.
+- **PROHIBIDO** depender de seguridad por “red interna” o por ocultar rutas.

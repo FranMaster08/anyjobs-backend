@@ -1,0 +1,55 @@
+---
+description: Configuración obligatoria por variables de entorno con validación fail-fast (NestJS ConfigModule)
+alwaysApply: true
+---
+
+# Cursor Rule — Configuración obligatoria por variables de entorno (AnyJobs Backend)
+
+## Objetivo
+Asegurar que la aplicación sea **altamente configurable** y **portable** (dev/qa/prod) mediante **variables de entorno**, con validación estricta antes de iniciar.
+
+## Regla principal (hard rule)
+- Toda configuración variable (URLs, puertos, credenciales, llaves, toggles, timeouts, nombres de colas, etc.) debe venir **sí o sí** desde **variables de entorno**.
+- **PROHIBIDO** hardcodear valores de configuración en código (incluye strings de conexión, secrets, tokens, rutas externas, etc.), excepto valores puramente constantes de negocio que no cambien por ambiente.
+
+## Fuente única de configuración
+- Se debe usar un **ConfigModule** central (NestJS) como punto único de lectura.
+- Solo `ConfigService` (o wrapper equivalente) puede proveer configuración al resto de módulos.
+- Los módulos **NO** deben leer `process.env` directamente (excepto dentro del módulo de configuración).
+
+## Validación antes de levantar (obligatorio)
+- Debe existir un módulo de validación de configuración que:
+  1) Declare el **schema** de variables requeridas (por ejemplo con Zod/Joi/class-validator).
+  2) Valide tipos, formatos, rangos y presencia.
+  3) Si falta una variable requerida o es inválida, el proceso debe **fallar inmediatamente** (fail-fast) y el servidor **NO** debe iniciar.
+
+## Estructura obligatoria
+- `apps/api/src/config/`
+  - `configuration.ts` (mapea env -> config tipada)
+  - `env.validation.ts` (schema + validación)
+  - `config.module.ts` (ConfigModule global y setup)
+- Debe existir `.env.example` en la raíz con todas las variables necesarias documentadas.
+
+## Reglas de contenido de variables
+- Secrets/keys: siempre por env y nunca commiteados.
+- Feature flags / toggles: por env (ej. `FEATURE_X_ENABLED=true`).
+- Timeouts y límites: por env (ej. `HTTP_TIMEOUT_MS`, `RATE_LIMIT_MAX`).
+- Config de servicios externos: por env (`<SERVICE>_BASE_URL`, `<SERVICE>_API_KEY`, etc.).
+- Config de DB/cache/broker: por env (`DB_*`, `REDIS_*`, `KAFKA_*`, etc.).
+
+## Nombres y consistencia
+- Variables en SCREAMING_SNAKE_CASE.
+- Prefijos por dominio técnico cuando aplique:
+  - `APP_`, `HTTP_`, `DB_`, `REDIS_`, `JWT_`, `LOG_`, `SWAGGER_`, `FEATURE_`, etc.
+
+## Prohibiciones
+- **PROHIBIDO**: iniciar la app sin validación de envs.
+- **PROHIBIDO**: fallback silencioso a defaults inseguros (ej. secret por defecto).
+- **PROHIBIDO**: leer `process.env` fuera de `apps/api/src/config/*`.
+- **PROHIBIDO**: valores “mágicos” de configuración dispersos en módulos.
+
+## Checklist obligatorio (para PRs)
+- [ ] Si se agrega nueva configuración: se agrega variable a `.env.example`
+- [ ] Se actualiza el schema en `env.validation.ts`
+- [ ] No hay lectura directa de `process.env` fuera del módulo de config
+- [ ] La app falla al inicio si falta una variable requerida

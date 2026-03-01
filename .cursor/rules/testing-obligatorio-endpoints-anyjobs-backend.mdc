@@ -1,0 +1,74 @@
+---
+description: Testing obligatorio por endpoint (unit + E2E) con Jest/TestingModule/Supertest (NestJS)
+alwaysApply: true
+---
+
+# Cursor Rule — Testing obligatorio por endpoint (Unit + E2E) (AnyJobs Backend)
+
+## Objetivo
+Garantizar que **cada endpoint** y **cada nueva funcionalidad** nazca con su **suite completa de pruebas** desde el primer commit/PR: **unit tests** y **end-to-end (E2E)** usando el stack estándar de NestJS (Jest + TestingModule + Supertest).
+
+## Regla principal (hard rule)
+- **PROHIBIDO** crear o modificar un endpoint sin:
+  1) **tests unitarios** que cubran la lógica del caso de uso (application/domain según aplique)
+  2) **tests E2E** que validen el comportamiento HTTP real del endpoint
+- Todo endpoint debe ser **verificable automáticamente** en CI/local.
+
+## Tipos de pruebas obligatorias
+### 1) Unit Tests (obligatorios)
+- Deben existir tests para los componentes de negocio que implementan el comportamiento:
+  - Casos de uso en `application/use-cases/*`
+  - Servicios de dominio en `domain/services/*` (si aplica)
+- Los unit tests deben usar **mocks** de `application/ports/*` (interfaces), nunca implementaciones reales.
+- Deben cubrir:
+  - caso feliz (happy path)
+  - validaciones/reglas de negocio relevantes
+  - errores esperados (por ejemplo: 404/409/422 a nivel de aplicación, según corresponda)
+
+### 2) E2E Tests (obligatorios)
+- Deben probar el endpoint completo vía HTTP usando `supertest` contra la app Nest levantada en modo test.
+- Deben verificar:
+  - status code correcto (2xx/4xx/5xx según escenarios)
+  - body de respuesta (shape mínimo y campos críticos)
+  - validación de inputs (DTO validation)
+  - auth/guards si el endpoint lo requiere
+- Si hay dependencias externas (DB, servicios), se debe usar:
+  - test containers / docker-compose de test, o
+  - adaptadores in-memory / fakes controlados por el test,
+  manteniendo las pruebas **repetibles**.
+
+## Ubicación y estructura de pruebas (Nest-like)
+- Unit tests:
+  - Co-localizados con el código o bajo `__tests__`, ejemplo:
+    - `apps/api/src/modules/<module>/application/use-cases/<x>.spec.ts`
+- E2E tests:
+  - `apps/api/test/e2e/<module>/<endpoint>.e2e-spec.ts`
+- Fixtures:
+  - `apps/api/test/fixtures/` (payloads, builders, data de prueba)
+
+## Reglas de cobertura mínima por endpoint
+Para **cada endpoint nuevo o modificado**, mínimo:
+- 1 test E2E “happy path”
+- 1 test E2E “error path” (ej. 400/401/403/404/409 según aplique)
+- Unit tests del caso de uso con:
+  - 1 caso feliz
+  - 1 caso de regla/validación o error esperado
+
+## Aislamiento y desacople (consistente con DDD)
+- Unit tests del `application` deben mockear solo **ports**:
+  - **PROHIBIDO** depender de DB real en unit tests.
+- E2E puede usar DB real de test, pero debe ser:
+  - determinística (setup/teardown claro)
+  - aislada por suite (no compartir estado sucio)
+
+## “Definition of Done” para endpoints
+Un endpoint se considera “terminado” solo si:
+- [ ] Tiene unit tests relevantes (caso de uso y reglas)
+- [ ] Tiene E2E tests (happy + error path)
+- [ ] Las pruebas corren localmente y en CI sin pasos manuales
+- [ ] No depende de orden de ejecución ni de estado compartido entre tests
+
+## Prohibiciones
+- **PROHIBIDO** mergear PRs con endpoints sin pruebas.
+- **PROHIBIDO** “probar manualmente” como sustituto de E2E.
+- **PROHIBIDO** agregar sleeps/timeouts arbitrarios en E2E; usar waits determinísticos (ej. polling controlado, hooks, eventos).

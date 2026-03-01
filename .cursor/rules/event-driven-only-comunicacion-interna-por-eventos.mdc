@@ -1,0 +1,42 @@
+---
+description: Comunicación interna 100% por eventos (prohibido HTTP/REST interno entre microservicios)
+alwaysApply: true
+---
+
+# Regla crítica — Comunicación interna 100% por eventos (Event-Driven Only)
+
+## Enunciado
+Cuando la comunicación sea **interna (service-to-service)**, un microservicio **NO** debe invocar endpoints HTTP/REST de otro microservicio.
+
+La integración interna **MUST** hacerse únicamente mediante **eventos** (pub/sub), con contratos versionados y publicables.
+
+## ¿Qué se considera "comunicación interna"?
+Se considera comunicación interna cuando:
+- El emisor y el receptor son **microservicios del mismo sistema** (misma plataforma / dominio organizacional).
+- El consumidor depende de datos o cambios de estado producidos por otro servicio **para continuar un proceso**.
+- La invocación sería “entre apps” dentro del mismo ecosistema (ej. `AnyJobs.Auth` → `AnyJobs.Users`, `AnyJobs.OpenRequests` → `AnyJobs.Proposals`, etc.).
+- El objetivo es coordinar consistencia eventual, workflows, notificaciones internas, sincronización de read models, auditoría, etc.
+
+**En resumen:** si ambos extremos son servicios propios y el propósito es coordinación del sistema, es interno → eventos.
+
+## ¿Qué NO es comunicación interna?
+- Frontend (Angular/SPA/Mobile) llamando al backend (esto es **borde**).
+- Integraciones con terceros (proveedores externos, bancos, email/sms gateways, etc.).
+- Webhooks entrantes/salientes hacia sistemas externos.
+- API pública para partners o clientes externos.
+
+## Reglas obligatorias
+- Los microservicios **MUST** publicar eventos de dominio/integración al completar acciones relevantes.
+- Los microservicios **MUST** consumir eventos para reaccionar y ejecutar sus propios casos de uso.
+- Los microservicios **MUST NOT** depender de respuestas síncronas de otros servicios para completar una operación interna.
+- La comunicación interna **MUST** tolerar reintentos, duplicados y orden variable (**idempotencia**).
+
+## Excepciones permitidas (solo si se aprueban explícitamente)
+- **Queries** estrictamente de lectura para UX (p. ej. API Gateway/BFF consultando read models), sin acoplar workflows.
+- **Bootstrap/health** (p. ej. discovery, readiness probes), no negocio.
+- Integraciones legacy transitorias con plan de eliminación (con fecha y ADR).
+
+## Implicación para este proyecto
+Los endpoints HTTP definidos (`/auth`, `/users`, `/open-requests`, `/site-config`, `/proposals`) son **borde** y sirven al front.
+
+La coordinación entre módulos/microservicios (p. ej. “usuario registrado”, “perfil actualizado”, “propuesta enviada”) se realiza publicando y consumiendo eventos, **nunca** con REST interno.

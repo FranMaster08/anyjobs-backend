@@ -1,0 +1,75 @@
+---
+description: Swagger obligatorio por endpoint con decorators compuestos por módulo (controllers limpios)
+alwaysApply: true
+---
+
+# Cursor Rule — Swagger obligatorio (AnyJobs Backend)
+
+## Objetivo
+Garantizar que **todo endpoint** (nuevo o modificado) tenga documentación Swagger completa, consistente y **desacoplada del controller**.
+
+## Regla principal (hard rule)
+- **Cada vez que se cree o modifique un endpoint**, se debe **crear o actualizar** su documentación Swagger **en el mismo PR/commit**.
+- Si un endpoint cambia su request/response, errores, status codes, headers o parámetros, **Swagger debe reflejarlo**.
+
+## Estructura obligatoria (Swagger separado del controller)
+- En cada módulo, la documentación Swagger debe vivir en:
+  - `apps/api/src/modules/<module>/api/swagger/`
+- Los controllers **NO** deben contener decoradores Swagger “grandes” (mucho contenido inline).
+- El controller solo debe **importar y aplicar** un decorador “composite” (wrapper) desde `api/swagger/`.
+
+### Ejemplo de estructura
+- `apps/api/src/modules/<module>/api/controllers/*.controller.ts`
+- `apps/api/src/modules/<module>/api/dtos/*.dto.ts`
+- `apps/api/src/modules/<module>/api/swagger/<endpoint>.swagger.ts`
+- `apps/api/src/modules/<module>/api/swagger/index.ts` (barrel opcional)
+
+## DTOs (descripción + ejemplos obligatorios)
+- Todo DTO expuesto por API debe:
+  - tener **descripción** por propiedad,
+  - tener **ejemplo** por propiedad,
+  - documentar opcionalidad, formato y restricciones (min/max/enum) cuando aplique.
+- Los DTOs deben usar decoradores Swagger por propiedad para describir y ejemplificar.
+- Si hay DTOs anidados, **también** deben tener ejemplos y descripción.
+
+## Documentación obligatoria por endpoint
+Todo endpoint debe tener:
+1) **Summary** (corto, claro)
+2) **Description** (qué hace, reglas funcionales relevantes)
+3) **Request** documentado:
+   - body (si aplica), query params, path params, headers relevantes
+4) **Responses completas**:
+   - **2xx** éxito (con DTO de respuesta si aplica)
+   - **3xx** si el endpoint puede redirigir (si no aplica, no inventar)
+   - **4xx** errores funcionales/validación/autorización/autenticación
+   - **5xx** errores inesperados
+5) Si hay múltiples errores 4xx, deben estar listados (ej. 400, 401, 403, 404, 409, 422).
+
+## Respuestas (requisito mínimo)
+- Cada endpoint debe declarar explícitamente:
+  - `200/201/204` según corresponda,
+  - al menos: `400`, `401`, `403`, `500` (si aplica por el tipo de endpoint).
+- Para endpoints que crean recursos: documentar `201`.
+- Para endpoints sin body en respuesta: documentar `204`.
+- Para conflictos de negocio: documentar `409`.
+- Para “no encontrado”: documentar `404`.
+
+## Controller limpio (norma)
+- Un controller no debe crecer por Swagger.
+- El controller debe verse así:
+  - decoradores Nest (route, guards, pipes)
+  - **1 decorador Swagger importado** por endpoint
+  - llamada al caso de uso
+- Todo lo pesado de Swagger debe quedar en `api/swagger/*.swagger.ts`.
+
+## Prohibiciones
+- **PROHIBIDO**: copiar/pegar decoradores Swagger extensos dentro del controller.
+- **PROHIBIDO**: DTOs sin `description` o sin `example`.
+- **PROHIBIDO**: endpoints sin `Summary` y sin `Description`.
+- **PROHIBIDO**: endpoints sin listado explícito de responses.
+
+## Checklist obligatorio (para cada PR con endpoints)
+- [ ] Swagger actualizado/creado para cada endpoint afectado
+- [ ] DTOs actualizados con descripción + ejemplo por propiedad
+- [ ] Controller mantiene Swagger “limpio” (solo importa decorador)
+- [ ] Responses 2xx + 4xx + 5xx documentadas correctamente

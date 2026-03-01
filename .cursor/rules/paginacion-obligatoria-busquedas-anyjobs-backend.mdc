@@ -1,0 +1,66 @@
+---
+description: Paginación obligatoria en búsquedas/listados con meta completa (items + meta) y límites por env
+alwaysApply: true
+---
+
+# Cursor Rule — Paginación obligatoria en todas las búsquedas (AnyJobs Backend)
+
+## Objetivo
+Asegurar que **toda búsqueda/listado** en la API sea **paginada** y entregue metadata completa para navegación y UI.
+
+## Regla principal (hard rule)
+- **PROHIBIDO** exponer endpoints de búsqueda/listado que retornen colecciones sin paginación.
+- Toda operación tipo “search”, “list”, “browse”, “filter”, “get all”, etc. debe soportar paginación.
+
+## Contrato mínimo de paginación (obligatorio)
+Toda respuesta paginada debe incluir:
+1) `items`: lista de resultados (puede ser vacía)
+2) `meta`: metadata de paginación con al menos:
+   - `totalItems` (total global de ítems que cumplen el filtro)
+   - `page` (página actual, 1-based)
+   - `pageSize` (tamaño de página)
+   - `totalPages`
+   - `hasNextPage`
+   - `hasPreviousPage`
+   - `nextPage` (número o null)
+   - `previousPage` (número o null)
+
+## Parámetros de request (obligatorio)
+Toda búsqueda/listado debe aceptar:
+- `page` (default: 1)
+- `pageSize` (default definido por configuración; max definido por configuración)
+
+### Reglas
+- `page >= 1`
+- `pageSize >= 1`
+- `pageSize` debe tener un máximo (ej. 100) configurado por variable de entorno.
+- Si el cliente pide `pageSize` mayor al máximo:
+  - se debe rechazar con 400, o
+  - clamplear al máximo (preferible documentar el comportamiento y mantenerlo consistente).
+
+## Ordenamiento y estabilidad (recomendado / casi obligatorio)
+- Las búsquedas deben permitir `sortBy` y `sortDirection` (asc/desc) cuando aplique.
+- **PROHIBIDO** paginar sin un orden determinístico (para evitar resultados “saltando” entre páginas).
+- Si no se especifica sort, debe existir un sort default estable (ej. `createdAt desc`).
+
+## DDD + capas (consistente con reglas anteriores)
+- La paginación se modela en `application/` como:
+  - `PageRequest` (page, pageSize, sort, filters)
+  - `PageResult<T>` (items + meta)
+- La infraestructura (repositorios) implementa la paginación real (DB query).
+- Los controllers solo mapean query params -> `PageRequest` y retornan `PageResult`.
+
+## Swagger y tests (obligatorio si existen reglas activas)
+- Swagger debe documentar:
+  - parámetros `page` y `pageSize`
+  - estructura `items` + `meta`
+- E2E tests deben cubrir:
+  - página 1
+  - page out of range (comportamiento definido)
+  - `pageSize` inválido o excediendo máximo
+  - `totalItems` y flags `hasNextPage/hasPreviousPage`
+
+## Prohibiciones
+- **PROHIBIDO** retornar “todo” sin paginar.
+- **PROHIBIDO** omitir `totalItems` en metadata.
+- **PROHIBIDO** entregar metadata incompleta (no basta con `page` y `pageSize` solamente).

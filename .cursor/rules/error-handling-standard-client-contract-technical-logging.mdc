@@ -1,0 +1,93 @@
+---
+description: Contrato único de error al cliente + logging técnico completo con correlationId y catálogo central de errores
+alwaysApply: true
+---
+
+# Cursor Rule — Error Handling Standard (Client Contract + Technical Logging)
+
+## Intent
+Estandarizar el manejo de errores en toda la aplicación:
+- El **cliente** siempre recibe **un único contrato de error** (sin detalles sensibles).
+- El **backend** siempre loguea el **error técnico completo** (stack trace + contexto) con **correlationId**.
+- Todos los errores se resuelven desde un **catálogo de códigos** (errorCode).
+
+## Scope
+Aplica a:
+- Controllers, Guards, Interceptors, Pipes, Services, Repositories, Integrations (HTTP/DB/Queues).
+- Cualquier endpoint HTTP expuesto por NestJS.
+- Cualquier operación que pueda fallar (validación, negocio, auth, externos, DB).
+
+## Hard Rules (Must)
+1. **Nunca** retornar stack traces, queries SQL, nombres de tablas, nombres internos, paths, tokens, secretos, payloads crudos, headers sensibles o dumps de objetos al cliente.
+2. Toda respuesta de error al cliente **DEBE** cumplir el **mismo contrato**:
+   - `status: number`
+   - `errorCode: string`
+   - `message: string` (mensaje para cliente, estable)
+   - `technicalMessage: string` (técnico corto, controlado por catálogo)
+   - `correlationId: string`
+   - `timestamp: string (ISO 8601)`
+   - `details?: object | array` (solo validación u otros casos aprobados)
+3. Todo error **DEBE** tener `errorCode` definido en un **Error Catalog** central.
+4. Todo error **DEBE** loguearse internamente con:
+   - `correlationId`
+   - `errorCode`
+   - `httpStatus`
+   - `stackTrace` completo
+   - `context` (controller/handler, route, method, module)
+   - `actor` (userId/tenantId/serviceId) si existe
+   - `safePayloadSnapshot` (redactado)
+5. Debe existir un **Global Exception Handler** único (Exception Filter o Middleware) que:
+   - mapee excepciones → catálogo
+   - construya el contrato único
+   - loguee el error técnico
+   - responda al cliente
+6. En `NODE_ENV=production` o cuando `DEBUG_LOGS=false`, no se deben imprimir payloads completos; solo versiones **redactadas**.
+
+## Error Catalog (Must)
+- Los códigos siguen convención: `<BOUNDARY>.<SUBDOMAIN>.<ERROR_NAME>`
+  - Ej: `AUTH.UNAUTHORIZED`, `VALIDATION.INVALID_INPUT`, `USER.EMAIL_ALREADY_EXISTS`, `EXTERNAL.BANK.TIMEOUT`, `INTERNAL.UNEXPECTED`
+- Cada entrada del catálogo define:
+  - `errorCode`
+  - `httpStatus`
+  - `defaultClientMessage`
+  - `defaultTechnicalMessage`
+  - `severity` (info|warn|error|critical)
+  - `isRetryable?`
+
+## Standard Mapping (Must)
+- Validación: `400` o `422` → `VALIDATION.*` + `details`
+- Unauthorized: `401` → `AUTH.UNAUTHORIZED`
+- Forbidden: `403` → `AUTH.FORBIDDEN`
+- Not Found: `404` → `*.NOT_FOUND`
+- Conflict/duplicados/estado inválido: `409` → `*.CONFLICT` / `*.ALREADY_EXISTS`
+- Rate limit: `429` → `LIMIT.TOO_MANY_REQUESTS`
+- No controlado: `500` → `INTERNAL.UNEXPECTED`
+
+## NestJS Implementation Guidance (Must)
+- Usar un `GlobalExceptionFilter` (o middleware) registrado globalmente.
+- Usar `Logger` nativo de NestJS (niveles).
+- Asegurar `correlationId`:
+  - generado si no viene
+  - propagado a logs y response
+  - agregado como header en response (si se usa) sin romper el contrato.
+
+## Redaction (Must)
+- Siempre redactar: `authorization`, `cookie`, `set-cookie`, `token`, `password`, `secret`, `apiKey`, `client_secret`, `refresh_token`, `otp`, `pin`.
+- Para payloads grandes: loguear solo claves relevantes o hash/size.
+
+## Output Constraints for AI (Cursor)
+Cuando generes o modifiques código por esta regla:
+- No crear formatos alternos de error (no `throw new HttpException({...})` directo con shape distinto).
+- No loguear y re-lanzar sin pasar por el handler global (evitar duplicación).
+- Cualquier excepción nueva debe:
+  - tener entrada en catálogo
+  - mapearse en el handler global
+  - incluir `errorCode` estable
+
+## Acceptance Checklist
+- [ ] Todos los endpoints devuelven el mismo contrato ante error
+- [ ] `correlationId` siempre presente en respuesta
+- [ ] `errorCode` siempre viene de catálogo
+- [ ] Logs internos incluyen stack trace + contexto
+- [ ] No se filtra información sensible al cliente
+- [ ] Validación incluye `details` sin exponer secretos

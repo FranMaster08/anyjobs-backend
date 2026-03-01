@@ -1,0 +1,73 @@
+---
+description: Arquitectura y estructura obligatoria del backend AnyJobs (NestJS monorepo + DDD estricto por módulo)
+alwaysApply: true
+---
+
+# Cursor Rule — AnyJobs Backend (NestJS Monorepo + DDD Estricto)
+
+## Objetivo
+Generar y mantener la arquitectura del backend AnyJobs en un monorepo NestJS alineado a Nest, usando DDD estricto por módulo (bounded context).
+
+Esta regla **SOLO** cubre arquitectura y estructura del proyecto. **No** define endpoints ni lógica de negocio del MVP.
+
+## Estructura obligatoria (monorepo Nest-like)
+- Seguir el layout de Nest monorepo:
+  - `apps/api/src/main.ts`
+  - `apps/api/src/app.module.ts`
+  - Módulos dentro de: `apps/api/src/modules/<module>/`
+
+## DDD por módulo (carpetas obligatorias)
+Cada módulo debe contener estas capas (todas obligatorias):
+- `domain/` (puro)
+- `application/` (casos de uso + puertos)
+- `infrastructure/` (adaptadores concretos)
+- `api/` (controllers + dtos + mappers)
+
+Estructura base:
+- `apps/api/src/modules/<module>/{domain,application,infrastructure,api}`
+
+## Desacople total (reglas duras)
+### 1) `domain/`
+- **PROHIBIDO**: importar NestJS, decorators, ORM, HTTP, librerías de infraestructura.
+- **PERMITIDO**: entidades, value objects, agregados, domain services, domain events.
+- **No puede depender** de otras capas.
+
+### 2) `application/`
+- Contiene casos de uso, comandos/queries, y **definición** de puertos (interfaces) en `application/ports/`.
+- Los casos de uso solo dependen de:
+  - `domain/`
+  - `application/ports/*` (interfaces)
+- **PROHIBIDO**: importar implementaciones de `infrastructure/` o cosas de `api/`.
+
+### 3) `infrastructure/`
+- Implementa los puertos definidos en `application/ports/`.
+- Contiene `adapters/` (persistence/crypto/providers/etc) y `di/` para el binding.
+- Puede depender de ORM, SDKs externos, etc.
+- **PROHIBIDO**: filtrar dependencias hacia `domain/` (el dominio no debe conocer infra).
+
+### 4) `api/`
+- Controllers, DTOs, mappers.
+- Mapea DTOs <-> comandos/queries y llama casos de uso.
+- **PROHIBIDO**: lógica de negocio en controllers.
+- **PROHIBIDO**: acceder directo a ORM o repos concretos (solo casos de uso).
+
+## Interfaces/Ports (obligatorio)
+- Toda dependencia “hacia afuera” debe ser interfaz en `application/ports/`.
+  - Ej: repositorios, time provider, hashing, token provider, email sender, event bus.
+- Las implementaciones deben vivir en `infrastructure/adapters/`.
+- El wiring (bind de interfaz -> clase) debe vivir en `infrastructure/di/` y exponerse al módulo Nest.
+
+## No compartir dominios entre módulos (regla crítica)
+- **PROHIBIDO**: importar entidades/value objects/agregados del `domain/` de otro módulo.
+- Si se requiere integración entre módulos:
+  - usar contratos (DTOs/Eventos de integración) propios del módulo consumidor, y/o
+  - un Anti-Corruption Layer (ACL) en `infrastructure/` del módulo consumidor.
+- Las dependencias entre módulos deben ser por contratos/puertos, **no** por modelos de dominio.
+
+## Nombres y convenciones
+- Nombres de módulos en **kebab-case**: `worker-profiles`, `client-requests`, etc.
+- Cada módulo debe tener `<module>.module.ts` como entrypoint Nest.
+
+## Salida esperada cuando se cree proyecto
+- Crear el tree base del monorepo y los módulos iniciales con carpetas vacías.
+- No agregar lógica de negocio ni endpoints a menos que se solicite explícitamente.
