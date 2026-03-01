@@ -1,0 +1,39 @@
+# Node / npm
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build outputs
+dist/
+coverage/
+.nyc_output/
+*.tsbuildinfo
+
+# Env (keep .env.example)
+.env
+.env.*.local
+
+# Logs
+logs/
+*.log
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Caches
+.eslintcache
+.cache/
+.swc/
+.parcel-cache/
+.turbo/
+.next/
+
+# NestJS
+.nestjs/
+
+# Jest
+junit.xml
