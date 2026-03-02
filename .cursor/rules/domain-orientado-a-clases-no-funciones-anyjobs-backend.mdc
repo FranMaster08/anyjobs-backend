@@ -1,0 +1,50 @@
+---
+description: Domain orientado a clases (sin funciones sueltas exportadas)
+globs: apps/api/src/modules/**/domain/**/*.ts
+alwaysApply: false
+---
+
+# Regla crítica — Domain orientado a clases (no funciones sueltas)
+
+## Enunciado
+El código de `domain/` MUST estar modelado como clases que encapsulan reglas e invariantes del negocio.  
+El dominio MUST NOT exponer lógica de negocio como funciones sueltas (`export function ...`) ni como “helpers” desperdigados.
+
+## Qué significa “dominio” en este proyecto
+Se considera dominio todo lo que vive en `modules/<module>/domain/` e incluye:
+- Entidades y agregados (estado + comportamiento)
+- Value Objects (validación, normalización, igualdad)
+- Domain Services (cuando una regla no pertenece claramente a una sola entidad)
+- Reglas/Invariantes explícitas
+
+## Reglas obligatorias
+- Entidades/Agregados MUST ser `class` con:
+  - estado privado o protegido
+  - constructores o factories controladas
+  - métodos que representen acciones de negocio
+  - validaciones e invariantes adentro (fail-fast)
+- Value Objects MUST ser `class` inmutables con:
+  - normalización/validación en constructor o método `create`
+  - representación (`toString`/`value`) clara
+  - igualdad (comparación por valor)
+- Domain logic MUST vivir en métodos (ej. `user.verifyEmail(otp)`, `user.activate()`, `user.updateLocation(...)`)
+- Domain MUST NOT depender de HTTP, DTOs, storage, frameworks ni librerías de transporte.
+
+## Dónde van las funciones
+- Helpers técnicos y utilitarios (formato, parseos, etc.) MUST vivir fuera del dominio, por ejemplo:
+  - `application/utils/`
+  - `infrastructure/utils/`
+- En el dominio solo se permiten funciones si son estrictamente internas (no exportadas) y no representan reglas de negocio.
+
+## Implicación directa para el ejemplo actual
+- `normalizeEmail`, `normalizePhoneNumber` MUST migrar a Value Objects:
+  - `Email` (class) con normalización y validación
+  - `PhoneNumber` (class) con normalización y validación
+- `buildPendingRegistrationUser(...)` MUST convertirse en:
+  - `AuthUser.registerPending(...)` (factory estática) o
+  - `AuthUserFactory` (class) dentro de domain, si se requiere
+
+## Regla de enforcement
+- Ningún archivo dentro de `domain/` puede exportar funciones como API pública.
+- Cualquier PR que introduzca lógica de negocio fuera de clases de dominio MUST ser rechazado.
+

@@ -1,0 +1,2 @@
+export type ProposalStatus = 'SENT';
+

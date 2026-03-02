@@ -1,0 +1,94 @@
+---
+description: Mantener archivos limpios: interfaces/tipos en carpetas dedicadas + barrel exports (index.ts) por capa
+alwaysApply: true
+---
+
+# Cursor Rule — Archivos limpios (interfaces/tipos) + Barrel Exports
+
+## Objetivo
+Evitar archivos “contaminados” (muchas responsabilidades mezcladas) estandarizando:
+- dónde viven las **interfaces/tipos/contratos**,
+- cómo se **exportan/importan** (barrels),
+- y cómo mantener cada archivo con **una responsabilidad**.
+
+## Regla principal (hard rule)
+- **OBLIGATORIO**: un archivo debe tener **una sola responsabilidad** dominante.
+  - Si un archivo empieza a mezclar **tipos + lógica + wiring + mappers + constantes**, se debe **separar**.
+- **OBLIGATORIO**: las **interfaces/tipos compartidos** deben vivir en carpetas dedicadas dentro de su **capa** (layer).
+- **OBLIGATORIO**: exponer contratos/tipos públicos mediante **barrel exports** (`index.ts`) por carpeta.
+- **PROHIBIDO**: importar internals “profundos” de otras capas o carpetas si existe un `index.ts` público.
+
+## Ubicación por capa (estándar)
+
+### `domain/`
+- Contiene: entidades, value objects, domain services, domain events.
+- **Tipos/contratos del dominio**:
+  - Preferir que estén colocalizados con la entidad/VO cuando sean exclusivos.
+  - Si son compartidos por varios archivos del dominio, crear `domain/types/` o `domain/contracts/`.
+- **PROHIBIDO**: declarar puertos de infraestructura aquí.
+
+### `application/`
+- Contiene: casos de uso, comandos/queries y puertos.
+- **Puertos**:
+  - Deben vivir en `application/ports/`.
+  - Si crece, separar por intención:
+    - `application/ports/repositories/`
+    - `application/ports/providers/`
+    - `application/ports/services/`
+  - Naming recomendado: `*.port.ts`.
+- **Tipos de aplicación** (inputs/outputs compartidos entre varios use-cases):
+  - `application/types/` o `application/contracts/` (no mezclar dentro de un use-case “grande”).
+
+### `infrastructure/`
+- Contiene: adaptadores concretos que implementan puertos + DI.
+- Tipos internos de infra:
+  - `infrastructure/types/` si es necesario, o colocalizados con el adapter.
+- **PROHIBIDO**: “redefinir” modelos de dominio aquí; usar los del `domain/`.
+
+### `api/`
+- Contiene: controllers, DTOs, mappers y swagger.
+- DTOs:
+  - `api/dtos/` y, si crece, subcarpetas por endpoint (`api/dtos/create/`, `api/dtos/list/`, etc.).
+  - Naming recomendado: `*.dto.ts`.
+- Tipos internos de API (si aplican):
+  - `api/types/` (no mezclar con DTOs expuestos).
+
+## Barrel exports (index.ts)
+- **OBLIGATORIO**: cada carpeta “pública” de contratos/tipos debe tener `index.ts` que exporte lo que se usa desde fuera.
+- **PROHIBIDO**: imports profundos cuando hay barrel.
+
+Ejemplo (application ports):
+- ✅ `import type { UserRepositoryPort } from '../ports';`
+- ❌ `import type { UserRepositoryPort } from '../ports/user-repository.port';` (si existe `../ports/index.ts`)
+
+## Estructura sugerida (ejemplo)
+- `apps/api/src/modules/<module>/`
+  - `domain/`
+    - `entities/`
+    - `types/`
+    - `index.ts`
+  - `application/`
+    - `use-cases/`
+    - `ports/`
+      - `repositories/`
+      - `providers/`
+      - `index.ts`
+    - `types/`
+    - `index.ts`
+  - `infrastructure/`
+    - `adapters/`
+    - `di/`
+    - `index.ts` (opcional)
+  - `api/`
+    - `controllers/`
+    - `dtos/`
+    - `swagger/`
+    - `index.ts` (opcional)
+
+## Checklist obligatorio (por cambio)
+- [ ] ¿El archivo tiene una sola responsabilidad dominante?
+- [ ] ¿Las interfaces/tipos compartidos viven en `types/`/`contracts/`/`ports/` según capa?
+- [ ] ¿Existe `index.ts` para exportar lo público?
+- [ ] ¿Los imports usan barrels en vez de rutas profundas?
+- [ ] ¿No hay mezcla de DTOs/API con dominio/aplicación?
+

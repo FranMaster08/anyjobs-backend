@@ -1,6 +1,6 @@
 import { applyDecorators } from '@nestjs/common';
 import { ApiForbiddenResponse, ApiOkResponse, ApiOperation, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
-import { HealthResponseDto } from '../dtos/health-response.dto';
+import { HealthResponseDto } from '../dtos';
 
 export function GetHealthDenySwagger() {
   return applyDecorators(

@@ -2,6 +2,7 @@ import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from '../../src/app.module';
+import { applyTestAppDefaults } from './test-app';
 
 function setTestEnv() {
   process.env.APP_PORT = process.env.APP_PORT ?? '3001';
@@ -23,6 +24,7 @@ describe('Health (e2e)', () => {
     }).compile();
 
     app = moduleRef.createNestApplication();
+    applyTestAppDefaults(app);
     await app.init();
   });
 

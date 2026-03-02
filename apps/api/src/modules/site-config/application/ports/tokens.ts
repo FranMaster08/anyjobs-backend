@@ -1,0 +1,2 @@
+export const SITE_CONFIG_PROVIDER = Symbol('SITE_CONFIG_PROVIDER');
+

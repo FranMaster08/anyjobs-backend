@@ -1,0 +1,46 @@
+---
+description: Separación estricta por artefacto TypeScript (interfaces/types/enums/funciones)
+globs: **/*.ts
+alwaysApply: false
+---
+
+# Regla crítica — Separación por artefacto (TypeScript: interfaces, types, enums, functions)
+
+## Enunciado
+El proyecto MUST evitar archivos que mezclen interfaces, types, enums y funciones.  
+Cada artefacto de TypeScript MUST vivir en una carpeta dedicada según su naturaleza, con archivos pequeños y una intención única.
+
+## Estructura obligatoria por módulo (aplica a todo el proyecto)
+Dentro de cada módulo, el código MUST organizarse así:
+
+- `interfaces/`  
+  Contiene únicamente `interface` (shapes). No contiene funciones, no contiene enums, no contiene types auxiliares.
+- `types/`  
+  Contiene únicamente `type` (uniones, utilitarios de types, alias). No contiene interfaces ni funciones.
+- `enums/`  
+  Contiene únicamente `enum` o “string unions” tratadas como enums (si el proyecto usa `type` para enums). No contiene interfaces ni funciones.
+- `functions/`  
+  Contiene funciones puras (helpers, normalizers). No contiene interfaces/types/enums.
+- `factories/`  
+  Contiene funciones de construcción (creación con defaults). No contiene interfaces/types/enums (solo imports).
+- `constants/` (opcional)  
+  Constantes (regex, límites, keys). No contiene tipos ni funciones de negocio.
+
+## Reglas de archivo (intención única)
+- Un archivo MUST contener un solo “grupo” coherente:
+  - `interfaces/auth-user.interface.ts` solo define `AuthUser`.
+  - `types/new-auth-user.type.ts` solo define `NewAuthUser`.
+  - `functions/normalize-email.ts` solo define `normalizeEmail`.
+- Un archivo MUST NOT contener simultáneamente:
+  - `interface` + `function`
+  - `type` + `function`
+  - `enum` + `interface`
+  - `command model` + `factory`
+
+## Reglas para comandos y modelos de aplicación
+- Modelos que representan intención de un caso de uso (por ejemplo `RegisterCommand`) MUST vivir en `application/commands/` o, si el módulo no separa layers aún, al menos en `commands/` (pero NO junto con interfaces del dominio).
+
+## Regla de limpieza global
+Esta separación MUST aplicarse a todos los módulos del proyecto.  
+Un PR que agregue o toque un archivo “mezclado” MUST refactorizarlo hacia esta estructura.
+

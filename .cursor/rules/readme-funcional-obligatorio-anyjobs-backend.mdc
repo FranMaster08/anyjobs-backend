@@ -1,0 +1,95 @@
+---
+description: README funcional obligatorio (sin separadores, sin emojis, sin títulos #) y mantenimiento por PR
+alwaysApply: true
+---
+
+# Regla — README funcional obligatorio (sin separadores, sin emojis, títulos medianos)
+
+## Enunciado
+El proyecto **MUST** incluir un `README.md` en la raíz que funcione como documento funcional y contrato humano de la API. Debe ser fácil de leer, sin ruido visual, y mantenerse actualizado con cada cambio relevante.
+
+## Estilo obligatorio (formato y legibilidad)
+- **MUST** evitar separadores visuales (líneas tipo `---`, `***`, etc.).
+- **MUST** evitar emojis y símbolos decorativos.
+- Los títulos **MUST** ser medianos:
+  - Usar `##` para secciones principales
+  - Usar `###` para subsecciones
+  - **MUST NOT** usar `#` (título gigante) dentro del README
+- **MUST** usar listas y bloques cortos para lectura rápida.
+- **MUST** mantener consistencia de términos (endpoint, request, response, DTO, evento).
+
+## Contenido mínimo por endpoint
+Por cada endpoint existente, el README **MUST** documentar:
+
+1) Propósito funcional
+- Qué resuelve
+- Dónde se usa (pantalla/flujo del front, si aplica)
+- Resultado observable
+
+2) Ruta y método
+- Método HTTP y path
+- Requisitos de autenticación (si aplica)
+
+3) Request (DTO)
+- Nombre del DTO
+- Campos uno por uno:
+  - tipo
+  - requerido/opcional
+  - reglas de validación (formato, mínimo, máximo)
+  - significado funcional
+- Ejemplo de request
+
+4) Response (DTO)
+- Status codes posibles
+- DTO de respuesta (si aplica)
+- Campos uno por uno (mismas reglas que request)
+- Ejemplo de response (si aplica)
+
+5) Errores
+- Formato mínimo: `{ "message": "..." }`
+- Casos funcionales que generan 4xx
+
+6) Eventos (si aplica)
+- Eventos publicados por el endpoint
+- Eventos consumidos/requeridos
+- Reglas de idempotencia/correlación si existen
+
+## Regla de mantenimiento obligatoria
+- Cada vez que se cree un endpoint, se cambie un payload, se agregue un DTO, o se cree un servicio/módulo, el `README.md` **MUST** actualizarse en el mismo PR.
+- Un PR con cambios de API **MUST NOT** aprobarse si el README no refleja el cambio.
+
+## Regla de revisión (gate de PR)
+El checklist del PR **MUST** incluir:
+- README actualizado con endpoints afectados
+- Ejemplos de payload actualizados
+- Status codes y errores documentados
+- Eventos documentados (si aplica)
+
+## Plantilla recomendada para cada endpoint (para copiar dentro del README)
+### <METHOD> <PATH>
+Propósito:
+- <texto>
+
+Autenticación:
+- <ninguna | bearer | cookie same-origin | etc.>
+
+Request (<DtoName>):
+- <campo>: <tipo> (<requerido/opcional>) - <significado> - <validación si aplica>
+Ejemplo:
+```json
+{}
+```
+
+Response:
+- <status>: <DtoName o vacío>
+Ejemplo:
+```json
+{}
+```
+
+Errores:
+- 4xx: { "message": "..." } (casos: )
+
+Eventos:
+- Publica: <lista o “ninguno”>
+- Consume: <lista o “ninguno”>

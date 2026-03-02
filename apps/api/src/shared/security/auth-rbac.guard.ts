@@ -65,7 +65,8 @@ export class AuthRbacGuard implements CanActivate {
 
     const userPermissions = parseCsvHeader(req.headers['x-permissions']);
     const userRoles = parseCsvHeader(req.headers['x-roles']);
-    req.user = { token, permissions: userPermissions, roles: userRoles };
+    const userId = typeof req.headers['x-user-id'] === 'string' ? req.headers['x-user-id'] : undefined;
+    req.user = { token, userId, permissions: userPermissions, roles: userRoles };
 
     const debugPayloads = this.configService.get<boolean>('logging.debugPayloads') ?? false;
     const logger = createAppLogger(AuthRbacGuard.name, this.correlationIdService, debugPayloads);

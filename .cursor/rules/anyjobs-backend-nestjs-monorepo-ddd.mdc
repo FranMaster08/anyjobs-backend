@@ -26,11 +26,21 @@ Cada módulo debe contener estas capas (todas obligatorias):
 Estructura base:
 - `apps/api/src/modules/<module>/{domain,application,infrastructure,api}`
 
+## Regla crítica — La lógica de negocio vive en `domain/`
+- **OBLIGATORIO**: toda **regla de negocio**, **invariante**, **transición de estado**, y **decisión de dominio** debe implementarse en `domain/`.
+- `application/` **NO** es el lugar para reglas de negocio; su rol es **orquestar** (coordinar) la ejecución de un caso de uso.
+- `api/` **NO** contiene lógica de negocio; sólo **mapea** DTOs/params ↔ comandos/queries y delega a `application/`.
+- `infrastructure/` **NO** contiene reglas de negocio; sólo implementa **detalles técnicos** (DB, HTTP, providers) detrás de puertos.
+
 ## Desacople total (reglas duras)
 ### 1) `domain/`
 - **PROHIBIDO**: importar NestJS, decorators, ORM, HTTP, librerías de infraestructura.
 - **PERMITIDO**: entidades, value objects, agregados, domain services, domain events.
 - **No puede depender** de otras capas.
+- **OBLIGATORIO**:
+  - Encapsular validaciones e invariantes (ej. formatos, rangos, consistencia interna).
+  - Encapsular cambios de estado (métodos del agregado/entidad o domain services puros).
+  - Exponer modelos y comportamientos del dominio como código “puro” (sin side effects técnicos).
 
 ### 2) `application/`
 - Contiene casos de uso, comandos/queries, y **definición** de puertos (interfaces) en `application/ports/`.
@@ -38,18 +48,28 @@ Estructura base:
   - `domain/`
   - `application/ports/*` (interfaces)
 - **PROHIBIDO**: importar implementaciones de `infrastructure/` o cosas de `api/`.
+- **OBLIGATORIO**:
+  - Orquestar el flujo del caso de uso (cargar agregados, invocar comportamiento de `domain/`, persistir vía puertos, publicar eventos).
+  - Mantener la lógica de negocio dentro del dominio (si una regla aparece en `application/`, muévela a `domain/`).
+- **PERMITIDO**:
+  - Validaciones “de aplicación” (ej. permisos RBAC ya resueltos, idempotencia, existencia de recursos, composición de llamadas).
 
 ### 3) `infrastructure/`
 - Implementa los puertos definidos en `application/ports/`.
 - Contiene `adapters/` (persistence/crypto/providers/etc) y `di/` para el binding.
 - Puede depender de ORM, SDKs externos, etc.
 - **PROHIBIDO**: filtrar dependencias hacia `domain/` (el dominio no debe conocer infra).
+- **PROHIBIDO**:
+  - Hacer “reglas” en queries/repos (ej. decidir estados de negocio, aplicar invariantes ahí).
+  - Mezclar mappers con decisiones de negocio (los mappers sólo transforman shapes).
 
 ### 4) `api/`
 - Controllers, DTOs, mappers.
 - Mapea DTOs <-> comandos/queries y llama casos de uso.
 - **PROHIBIDO**: lógica de negocio en controllers.
 - **PROHIBIDO**: acceder directo a ORM o repos concretos (solo casos de uso).
+- **PERMITIDO**:
+  - Validación de entrada (DTO validation), parseo de query params, y mapeos simples.
 
 ## Interfaces/Ports (obligatorio)
 - Toda dependencia “hacia afuera” debe ser interfaz en `application/ports/`.

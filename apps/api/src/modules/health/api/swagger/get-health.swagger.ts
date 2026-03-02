@@ -1,6 +1,6 @@
 import { applyDecorators } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { HealthResponseDto } from '../dtos/health-response.dto';
+import { HealthResponseDto } from '../dtos';
 
 export function GetHealthSwagger() {
   return applyDecorators(
