@@ -1,0 +1,33 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_DATABASE:-anyjobs}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - anyjobs_pgdata_e2e:/var/lib/postgresql/data
+
+  e2e:
+    build:
+      context: .
+      target: deps
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: test
+      DB_TYPE: postgres
+      DB_HOST: postgres
+      DB_PORT: 5432
+    depends_on:
+      - postgres
+    working_dir: /app
+    command: ["npm","run","test:e2e"]
+    volumes:
+      - ./:/app
+      - /app/node_modules
+
+volumes:
+  anyjobs_pgdata_e2e:

@@ -25,6 +25,80 @@ cp .env.example .env
 npm run start:api:dev
 ```
 
+## Docker (estándar)
+La imagen de producción **no** incluye secretos ni archivos `.env`. La configuración se inyecta siempre por variables de entorno.
+
+### Desarrollo con Docker
+Requisitos:
+- Docker Desktop (o Docker Engine + Compose plugin)
+
+Comandos:
+
+```bash
+docker compose up --build
+```
+
+La API se expone por defecto en `http://localhost:${APP_PORT}`.
+
+Notas:
+- El contenedor de dev usa `nest start api --watch`.
+- Postgres corre en el servicio `postgres` y la API apunta a `DB_HOST=postgres`.
+ - Logs: `docker compose logs -f api` / `docker compose logs -f postgres`
+ - Rebuild: `docker compose build --no-cache api && docker compose up -d api`
+ - Variables: crear `.env` desde `.env.example` (se usa con `env_file`; no se copia a la imagen).
+
+### Build y run de producción
+Build (runtime):
+
+```bash
+docker build -t anyjobs-back:local --target runtime .
+```
+
+Run:
+
+```bash
+docker run --rm -p 3000:3000 --env-file .env anyjobs-back:local
+```
+
+Healthcheck:
+- La imagen de producción se basa en distroless (sin shell). El healthcheck se recomienda a nivel de orquestador, o bien usando un check exec con Node (sin curl/wget).
+
+### CI (build/test) y publicación de imágenes
+Build + unit tests (targets del Dockerfile):
+
+```bash
+docker build --target test .
+docker build --target runtime -t anyjobs-back:${GIT_SHA:-local} .
+```
+
+E2E con Docker Compose (tests + Postgres):
+
+```bash
+docker compose -f docker-compose.e2e.yml up --build --abort-on-container-exit
+```
+
+BuildKit/cache:
+- Recomendado en CI: `DOCKER_BUILDKIT=1` (Docker Desktop ya lo usa por defecto).
+- El `Dockerfile` usa cache de npm con BuildKit para acelerar builds repetidos.
+
+Multi-plataforma (Buildx):
+
+```bash
+docker buildx build --platform linux/amd64,linux/arm64 --target runtime -t anyjobs-back:${GIT_SHA:-local} .
+```
+
+Tagging recomendado:
+- `anyjobs-back:<git-sha>` como mínimo para trazabilidad.
+- Opcional: tags adicionales por release (semver) y/o ambiente.
+
+Checklist mínimo antes de publicar:
+- build `--target test` OK
+- build `--target runtime` OK
+- (si aplica) E2E OK
+
+### Imagen “debug” (no producción)
+Existe un target `debug` basado en `node:18-bookworm-slim` para troubleshooting. No debe usarse como imagen final de producción.
+
 ## Scripts
 - Dev API: `npm run start:api:dev`
 - Start API: `npm run start:api`

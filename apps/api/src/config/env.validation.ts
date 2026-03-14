@@ -3,6 +3,16 @@ import { z } from 'zod';
 const logLevels = ['debug', 'log', 'warn', 'error'] as const;
 const dbTypes = ['postgres', 'sqljs'] as const;
 
+const booleanFromEnv = z.preprocess((value) => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (['true', '1', 'yes', 'y', 'on'].includes(normalized)) return true;
+    if (['false', '0', 'no', 'n', 'off'].includes(normalized)) return false;
+  }
+  return value;
+}, z.boolean());
+
 const baseSchema = z.object({
   NODE_ENV: z
     .enum(['development', 'test', 'production'])
@@ -12,18 +22,18 @@ const baseSchema = z.object({
   APP_PORT: z.coerce.number().int().min(1).max(65535),
 
   LOG_LEVEL: z.enum(logLevels),
-  LOG_DEBUG_PAYLOADS: z.coerce.boolean().optional().default(false),
+  LOG_DEBUG_PAYLOADS: booleanFromEnv.optional().default(false),
 
   DB_TYPE: z.enum(dbTypes),
-  DB_SSL: z.coerce.boolean().optional().default(false),
-  DB_LOGGING: z.coerce.boolean().optional().default(false),
-  DB_SYNCHRONIZE: z.coerce.boolean().optional().default(false),
-  DB_MIGRATIONS_RUN: z.coerce.boolean().optional().default(false),
+  DB_SSL: booleanFromEnv.optional().default(false),
+  DB_LOGGING: booleanFromEnv.optional().default(false),
+  DB_SYNCHRONIZE: booleanFromEnv.optional().default(false),
+  DB_MIGRATIONS_RUN: booleanFromEnv.optional().default(false),
 
   PAGINATION_DEFAULT_PAGE_SIZE: z.coerce.number().int().min(1),
   PAGINATION_MAX_PAGE_SIZE: z.coerce.number().int().min(1),
 
-  SWAGGER_ENABLED: z.coerce.boolean().optional().default(true),
+  SWAGGER_ENABLED: booleanFromEnv.optional().default(true),
   SWAGGER_PATH: z.string().optional().default('docs'),
 });
 

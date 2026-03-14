@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_DATABASE:-anyjobs}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - anyjobs_pgdata:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: .
+      target: dev
+    env_file:
+      - .env
+    environment:
+      APP_PORT: ${APP_PORT:-3000}
+      LOG_LEVEL: ${LOG_LEVEL:-log}
+      LOG_DEBUG_PAYLOADS: ${LOG_DEBUG_PAYLOADS:-false}
+
+      PAGINATION_DEFAULT_PAGE_SIZE: ${PAGINATION_DEFAULT_PAGE_SIZE:-20}
+      PAGINATION_MAX_PAGE_SIZE: ${PAGINATION_MAX_PAGE_SIZE:-100}
+
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
+      SWAGGER_PATH: ${SWAGGER_PATH:-docs}
+
+      DB_TYPE: ${DB_TYPE:-postgres}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_DATABASE: ${DB_DATABASE:-anyjobs}
+      DB_SSL: ${DB_SSL:-false}
+      DB_LOGGING: ${DB_LOGGING:-false}
+      DB_SYNCHRONIZE: ${DB_SYNCHRONIZE:-false}
+      DB_MIGRATIONS_RUN: ${DB_MIGRATIONS_RUN:-false}
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    depends_on:
+      - postgres
+    volumes:
+      - ./:/app
+      - /app/node_modules
+      - /app/dist
+
+volumes:
+  anyjobs_pgdata:
