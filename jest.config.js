@@ -2,9 +2,10 @@
 module.exports = {
   moduleFileExtensions: ['js', 'json', 'ts'],
   rootDir: '.',
+  setupFiles: ['<rootDir>/jest.setup.js'],
   testRegex: '.*\\.spec\\.ts$',
   transform: {
-    '^.+\\.(t|j)s$': 'ts-jest',
+    '^.+\\.ts$': 'ts-jest',
   },
   collectCoverageFrom: ['apps/api/src/**/*.(t|j)s'],
   coverageDirectory: './coverage',

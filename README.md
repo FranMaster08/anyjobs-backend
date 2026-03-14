@@ -31,18 +31,67 @@ npm run start:api:dev
 - Build: `npm run build`
 - Unit tests: `npm test`
 - E2E tests: `npm run test:e2e`
+- Migraciones (TypeORM): `npm run migration:run` / `npm run migration:revert` / `npm run migration:generate -- <path>`
 
 ## Variables de entorno
 Ver `.env.example`. Variables mínimas:
 - `APP_PORT`
 - `LOG_LEVEL` (debug|log|warn|error)
 - `LOG_DEBUG_PAYLOADS` (true|false)
+- `DB_TYPE` (postgres|sqljs)
+- `DB_SSL` (true|false)
+- `DB_LOGGING` (true|false)
+- `DB_SYNCHRONIZE` (true|false, debe ser false en producción)
+- `DB_MIGRATIONS_RUN` (true|false)
 - `PAGINATION_DEFAULT_PAGE_SIZE`
 - `PAGINATION_MAX_PAGE_SIZE`
 - `SWAGGER_ENABLED` (true|false)
 - `SWAGGER_PATH` (ej. docs)
 
 La app no inicia si faltan variables requeridas (fail-fast).
+
+## Persistencia (TypeORM)
+### Configuración de DB
+- Si `DB_TYPE=postgres`, se requieren:
+  - `DB_HOST`
+  - `DB_PORT`
+  - `DB_USERNAME`
+  - `DB_PASSWORD`
+  - `DB_DATABASE`
+- Si `DB_TYPE=sqljs`, se puede usar:
+  - `DB_SQLJS_LOCATION` (por defecto `:memory:`)
+
+### Migraciones
+- Ejecutar migraciones:
+
+```bash
+npm run migration:run
+```
+
+- Revertir la última migración:
+
+```bash
+npm run migration:revert
+```
+
+- Generar una migración (requiere entidades TypeORM registradas):
+
+```bash
+npm run migration:generate -- apps/api/src/shared/persistence/migrations/<nombre>
+```
+
+### Convenciones (DDD por módulo)
+- Puertos (contratos): `apps/api/src/modules/<module>/application/ports/*`
+- Adaptadores concretos: `apps/api/src/modules/<module>/infrastructure/adapters/*`
+- Entidades TypeORM: `apps/api/src/modules/<module>/infrastructure/**/*.entity.ts`
+- El `domain/` y `application/` MUST NOT importar `typeorm` ni `@nestjs/typeorm`.
+
+### Logging de DB y correlationId
+- Los logs de DB respetan:
+  - `DB_LOGGING` para habilitar/deshabilitar logging TypeORM
+  - `LOG_DEBUG_PAYLOADS` para incluir/excluir detalles de queries
+- Los logs de DB incluyen `correlationId` cuando existe contexto de request.
+- No se loguean parámetros de queries ni secretos.
 
 ## Convenciones de API
 ### Correlation ID

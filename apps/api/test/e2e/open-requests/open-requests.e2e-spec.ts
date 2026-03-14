@@ -8,6 +8,12 @@ function setTestEnv() {
   process.env.APP_PORT = process.env.APP_PORT ?? '3001';
   process.env.LOG_LEVEL = process.env.LOG_LEVEL ?? 'error';
   process.env.LOG_DEBUG_PAYLOADS = process.env.LOG_DEBUG_PAYLOADS ?? 'false';
+  process.env.DB_TYPE = process.env.DB_TYPE ?? 'sqljs';
+  process.env.DB_SQLJS_LOCATION = process.env.DB_SQLJS_LOCATION ?? ':memory:';
+  process.env.DB_MIGRATIONS_RUN = process.env.DB_MIGRATIONS_RUN ?? 'true';
+  process.env.DB_SYNCHRONIZE = process.env.DB_SYNCHRONIZE ?? 'false';
+  process.env.DB_LOGGING = process.env.DB_LOGGING ?? 'false';
+  process.env.DB_SSL = process.env.DB_SSL ?? 'false';
   process.env.PAGINATION_DEFAULT_PAGE_SIZE = process.env.PAGINATION_DEFAULT_PAGE_SIZE ?? '12';
   process.env.PAGINATION_MAX_PAGE_SIZE = process.env.PAGINATION_MAX_PAGE_SIZE ?? '100';
   process.env.SWAGGER_ENABLED = process.env.SWAGGER_ENABLED ?? 'false';
@@ -48,13 +54,23 @@ describe('Open Requests (e2e)', () => {
   });
 
   it('GET /open-requests/:id returns detail with images array', async () => {
-    const res = await request(app.getHttpServer()).get('/open-requests/req-1').expect(200);
-    expect(res.body.id).toBe('req-1');
+    const listRes = await request(app.getHttpServer())
+      .get('/open-requests')
+      .query({ page: 1, pageSize: 1 })
+      .expect(200);
+
+    const id = listRes.body.items?.[0]?.id;
+    expect(id).toBeTruthy();
+
+    const res = await request(app.getHttpServer()).get(`/open-requests/${id}`).expect(200);
+    expect(res.body.id).toBe(id);
     expect(Array.isArray(res.body.images)).toBe(true);
   });
 
   it('GET /open-requests/:id missing returns 404', async () => {
-    const res = await request(app.getHttpServer()).get('/open-requests/missing').expect(404);
+    const res = await request(app.getHttpServer())
+      .get('/open-requests/11111111-1111-1111-1111-111111111111')
+      .expect(404);
     expect(res.body).toMatchObject({ status: 404, errorCode: 'OPEN_REQUEST.NOT_FOUND' });
   });
 });

@@ -12,12 +12,14 @@ import { CorrelationModule } from './shared/correlation/correlation.module';
 import { GlobalExceptionFilter } from './shared/errors/global-exception.filter';
 import { AuthRbacGuard } from './shared/security/auth-rbac.guard';
 import { InMemoryModule } from './shared/in-memory/in-memory.module';
+import { PersistenceModule } from './shared/persistence/persistence.module';
 
 @Module({
   imports: [
     AppConfigModule,
     CorrelationModule,
     InMemoryModule,
+    PersistenceModule,
     HealthModule,
     AuthModule,
     UserProfileModule,

@@ -12,12 +12,16 @@ import {
   AUTH_TOKEN_SERVICE,
   AUTH_USER_REPOSITORY,
 } from './application/ports/tokens';
-import { InMemoryAuthUserRepository } from './infrastructure/adapters/in-memory-auth-user.repository';
 import { ScryptPasswordHasher } from './infrastructure/adapters/scrypt-password-hasher';
 import { UuidTokenService } from './infrastructure/adapters/uuid-token.service';
-import { InMemoryRegistrationFlowStore } from './infrastructure/adapters/in-memory-registration-flow.store';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { UserEntity } from '../../shared/persistence/entities';
+import { RegistrationFlowEntity } from './infrastructure/entities/registration-flow.entity';
+import { TypeOrmAuthUserRepository } from './infrastructure/adapters/typeorm-auth-user.repository';
+import { TypeOrmRegistrationFlowStore } from './infrastructure/adapters/typeorm-registration-flow.store';
 
 @Module({
+  imports: [TypeOrmModule.forFeature([UserEntity, RegistrationFlowEntity])],
   controllers: [AuthController],
   providers: [
     RegisterUseCase,
@@ -26,10 +30,10 @@ import { InMemoryRegistrationFlowStore } from './infrastructure/adapters/in-memo
     CheckEmailAvailableUseCase,
     CheckPhoneAvailableUseCase,
     LoginUseCase,
-    { provide: AUTH_USER_REPOSITORY, useClass: InMemoryAuthUserRepository },
+    { provide: AUTH_USER_REPOSITORY, useClass: TypeOrmAuthUserRepository },
     { provide: AUTH_PASSWORD_HASHER, useClass: ScryptPasswordHasher },
     { provide: AUTH_TOKEN_SERVICE, useClass: UuidTokenService },
-    { provide: AUTH_REGISTRATION_FLOW_STORE, useClass: InMemoryRegistrationFlowStore },
+    { provide: AUTH_REGISTRATION_FLOW_STORE, useClass: TypeOrmRegistrationFlowStore },
   ],
 })
 export class AuthModule {}

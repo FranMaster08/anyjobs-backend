@@ -5,16 +5,19 @@ import { UpdateWorkerProfileUseCase } from './application/use-cases/update-worke
 import { UpdateClientProfileUseCase } from './application/use-cases/update-client-profile.use-case';
 import { UpdatePersonalInfoUseCase } from './application/use-cases/update-personal-info.use-case';
 import { USER_PROFILE_USER_REPOSITORY } from './application/ports/tokens';
-import { InMemoryUserProfileRepository } from './infrastructure/adapters/in-memory-user-profile.repository';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { UserEntity } from '../../shared/persistence/entities';
+import { TypeOrmUserProfileRepository } from './infrastructure/adapters/typeorm-user-profile.repository';
 
 @Module({
+  imports: [TypeOrmModule.forFeature([UserEntity])],
   controllers: [UserProfileController],
   providers: [
     UpdateLocationUseCase,
     UpdateWorkerProfileUseCase,
     UpdateClientProfileUseCase,
     UpdatePersonalInfoUseCase,
-    { provide: USER_PROFILE_USER_REPOSITORY, useClass: InMemoryUserProfileRepository },
+    { provide: USER_PROFILE_USER_REPOSITORY, useClass: TypeOrmUserProfileRepository },
   ],
 })
 export class UserProfileModule {}
