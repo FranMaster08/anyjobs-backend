@@ -34,6 +34,21 @@ function toListItem(e: OpenRequestEntity): OpenRequestListItem {
 }
 
 function toDetail(e: OpenRequestEntity): OpenRequestDetail {
+  const parsedImages = parseJsonIfString<unknown>(e.images as any, []);
+  const imagesArray = Array.isArray(parsedImages) ? (parsedImages as Array<{ url?: unknown; alt?: unknown }>) : [];
+  const fallbackAlt = (e.imageAlt ?? '').trim() || 'Imagen de la solicitud';
+
+  const normalizedImages = imagesArray
+    .map((img) => {
+      const url = typeof img?.url === 'string' ? img.url.trim() : '';
+      if (!url) return null;
+      const alt = typeof img?.alt === 'string' ? img.alt.trim() : '';
+      return { url, alt: alt || fallbackAlt };
+    })
+    .filter((x): x is { url: string; alt: string } => x !== null);
+
+  const images = normalizedImages.length > 0 ? normalizedImages : e.imageUrl ? [{ url: e.imageUrl, alt: fallbackAlt }] : [];
+
   return {
     id: e.id,
     title: e.title,
@@ -49,7 +64,7 @@ function toDetail(e: OpenRequestEntity): OpenRequestDetail {
     providerReviews: parseJsonIfString(e.providerReviews as any, []),
     contactPhone: e.contactPhone,
     contactEmail: e.contactEmail,
-    images: parseJsonIfString(e.images as any, []),
+    images,
   };
 }
 

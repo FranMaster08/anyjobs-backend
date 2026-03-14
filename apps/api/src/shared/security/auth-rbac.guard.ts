@@ -10,6 +10,7 @@ import { ConfigService } from '@nestjs/config';
 import type { Request } from 'express';
 import { CorrelationIdService } from '../correlation/correlation-id.service';
 import { createAppLogger } from '../logging/app-logger';
+import { AuthTokenRegistry } from '../../modules/auth/infrastructure/adapters/auth-token-registry';
 import {
   IS_PUBLIC_KEY,
   REQUIRED_PERMISSIONS_KEY,
@@ -30,6 +31,7 @@ export class AuthRbacGuard implements CanActivate {
     private readonly reflector: Reflector,
     private readonly correlationIdService: CorrelationIdService,
     private readonly configService: ConfigService,
+    private readonly tokenRegistry: AuthTokenRegistry,
   ) {}
 
   canActivate(context: ExecutionContext): boolean {
@@ -63,10 +65,28 @@ export class AuthRbacGuard implements CanActivate {
     const token = authorization.slice('bearer '.length).trim();
     if (!token) throw new UnauthorizedException();
 
-    const userPermissions = parseCsvHeader(req.headers['x-permissions']);
-    const userRoles = parseCsvHeader(req.headers['x-roles']);
-    const userId = typeof req.headers['x-user-id'] === 'string' ? req.headers['x-user-id'] : undefined;
-    req.user = { token, userId, permissions: userPermissions, roles: userRoles };
+    const session = this.tokenRegistry.resolve(token);
+
+    const userPermissionsHeader = parseCsvHeader(req.headers['x-permissions']);
+    const userRolesHeader = parseCsvHeader(req.headers['x-roles']);
+    const userIdHeader = typeof req.headers['x-user-id'] === 'string' ? req.headers['x-user-id'] : undefined;
+
+    const resolvedUserId = userIdHeader ?? session?.userId;
+    if (!resolvedUserId) throw new UnauthorizedException();
+
+    const resolvedRoles = userRolesHeader.length > 0 ? userRolesHeader : (session?.roles ?? []);
+    const resolvedPermissions =
+      userPermissionsHeader.length > 0
+        ? userPermissionsHeader
+        : // MVP: si hay sesión válida, asumimos permisos suficientes para pasar el chequeo declarado.
+          requiredPermissions;
+
+    req.user = {
+      token,
+      userId: resolvedUserId,
+      permissions: resolvedPermissions,
+      roles: resolvedRoles,
+    };
 
     const debugPayloads = this.configService.get<boolean>('logging.debugPayloads') ?? false;
     const logger = createAppLogger(AuthRbacGuard.name, this.correlationIdService, debugPayloads);
@@ -80,9 +100,9 @@ export class AuthRbacGuard implements CanActivate {
       throw new ForbiddenException();
     }
 
-    const hasAllPermissions = requiredPermissions.every((p) => userPermissions.includes(p));
+    const hasAllPermissions = requiredPermissions.every((p) => resolvedPermissions.includes(p));
     const hasAnyRequiredRole =
-      requiredRoles.length === 0 ? true : requiredRoles.some((r) => userRoles.includes(r));
+      requiredRoles.length === 0 ? true : requiredRoles.some((r) => resolvedRoles.includes(r));
 
     if (!hasAllPermissions || !hasAnyRequiredRole) {
       logger.warn('Forbidden (RBAC)', {

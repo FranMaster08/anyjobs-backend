@@ -4,8 +4,9 @@ import type { TokenServicePort } from '../../application/ports/token-service.por
 
 @Injectable()
 export class UuidTokenService implements TokenServicePort {
-  async issueToken(_subjectUserId: string): Promise<string> {
+  async issueToken(subjectUserId: string): Promise<string> {
     // MVP: token opaque (sin claims). Evolución futura: JWT.
+    void subjectUserId;
     return randomUUID();
   }
 }

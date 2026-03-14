@@ -14,6 +14,7 @@ import {
 } from './application/ports/tokens';
 import { ScryptPasswordHasher } from './infrastructure/adapters/scrypt-password-hasher';
 import { UuidTokenService } from './infrastructure/adapters/uuid-token.service';
+import { AuthTokenRegistry } from './infrastructure/adapters/auth-token-registry';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserEntity } from '../../shared/persistence/entities';
 import { RegistrationFlowEntity } from './infrastructure/entities/registration-flow.entity';
@@ -24,6 +25,7 @@ import { TypeOrmRegistrationFlowStore } from './infrastructure/adapters/typeorm-
   imports: [TypeOrmModule.forFeature([UserEntity, RegistrationFlowEntity])],
   controllers: [AuthController],
   providers: [
+    AuthTokenRegistry,
     RegisterUseCase,
     VerifyEmailOtpUseCase,
     VerifyPhoneOtpUseCase,
@@ -35,6 +37,7 @@ import { TypeOrmRegistrationFlowStore } from './infrastructure/adapters/typeorm-
     { provide: AUTH_TOKEN_SERVICE, useClass: UuidTokenService },
     { provide: AUTH_REGISTRATION_FLOW_STORE, useClass: TypeOrmRegistrationFlowStore },
   ],
+  exports: [AuthTokenRegistry],
 })
 export class AuthModule {}
 

@@ -6,6 +6,7 @@ import { AUTH_PASSWORD_HASHER, AUTH_TOKEN_SERVICE, AUTH_USER_REPOSITORY } from '
 import type { PasswordHasherPort, TokenServicePort, UserRepositoryPort } from '../ports';
 import type { AuthUser } from '../../domain';
 import { Email } from '../../domain';
+import { AuthTokenRegistry } from '../../infrastructure/adapters/auth-token-registry';
 
 export interface LoginInput {
   email: string;
@@ -26,6 +27,7 @@ export class LoginUseCase {
     @Inject(AUTH_USER_REPOSITORY) private readonly userRepo: UserRepositoryPort,
     @Inject(AUTH_PASSWORD_HASHER) private readonly passwordHasher: PasswordHasherPort,
     @Inject(AUTH_TOKEN_SERVICE) private readonly tokenService: TokenServicePort,
+    private readonly tokenRegistry: AuthTokenRegistry,
     correlationIdService: CorrelationIdService,
     configService: ConfigService,
   ) {
@@ -44,6 +46,7 @@ export class LoginUseCase {
     if (!ok) throw new UnauthorizedException();
 
     const token = await this.tokenService.issueToken(user.id);
+    this.tokenRegistry.register(token, { userId: user.id, roles: user.roles as unknown as string[] });
 
     const { passwordHash: _ph, ...safeUser } = user;
 

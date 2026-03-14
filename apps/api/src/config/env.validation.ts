@@ -24,6 +24,8 @@ const baseSchema = z.object({
   LOG_LEVEL: z.enum(logLevels),
   LOG_DEBUG_PAYLOADS: booleanFromEnv.optional().default(false),
 
+  SEED_DEMO_PASSWORD: z.string().min(8).optional(),
+
   DB_TYPE: z.enum(dbTypes),
   DB_SSL: booleanFromEnv.optional().default(false),
   DB_LOGGING: booleanFromEnv.optional().default(false),

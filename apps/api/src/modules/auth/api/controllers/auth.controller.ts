@@ -43,6 +43,7 @@ import {
 const REG_FLOW_COOKIE = 'aj_reg_flow';
 
 @ApiTags('Auth')
+@Public()
 @Controller('auth')
 export class AuthController {
   private readonly logger;
