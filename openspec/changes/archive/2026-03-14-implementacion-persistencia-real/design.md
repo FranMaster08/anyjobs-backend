@@ -35,8 +35,14 @@ Restricciones clave:
   - SQLite file/in-memory para runtime: útil para tests, pero no como target principal de persistencia real.
 
 ### Entidades persistentes y mappers confinados a `infrastructure/`
-- **Decisión**: cada módulo define sus entidades TypeORM dentro de `apps/api/src/modules/<module>/infrastructure/**` junto con mappers dominio↔persistencia y adaptadores de repositorio.
+- **Decisión**: cada módulo define sus entidades TypeORM dentro de `apps/api/src/modules/<module>/infrastructure/**` junto con mappers dominio↔persistencia y adaptadores de repositorio. Para datos compartidos entre bounded contexts (p. ej. usuario), se usa una entidad compartida en `apps/api/src/shared/persistence/entities/*` consumida por adapters, sin exponerla al dominio.
 - **Racional**: evita imports ORM fuera de infraestructura y permite evolucionar el dominio sin acoplarlo al esquema.
+
+### IDs como UUID en todas las tablas principales
+- **Decisión**: los IDs persistidos MUST ser UUID para recursos principales (por ejemplo `users.id`, `open_requests.id`, `site_config.id`, `proposals.id`, `auth_registration_flows.flowId`, `proposals.requestId`, `proposals.userId`).
+- **Racional**: consistencia transversal, compatibilidad con Postgres/SQLJS en tests, y evita IDs “de demo” (ej. `req-1`) en runtime.
+- **Alternativas consideradas**:
+  - Strings “human-friendly” (`req-1`, `default`): útil para mocks/fixtures, descartado para persistencia real.
 
 ### Wiring por ambiente: in-memory sólo para tests/unit, DB para runtime
 - **Decisión**: los providers por defecto del módulo apuntan a adaptadores DB; los adaptadores in-memory se reservan para unit tests (mocks) o escenarios explícitos de test.
@@ -53,12 +59,17 @@ Restricciones clave:
   - Testcontainers: excelente aislamiento, pero puede ser más pesado; queda como opción si el repo ya lo usa.
   - Reutilizar una DB compartida sin limpieza estricta: descartado por no determinista.
 
+### Portabilidad Postgres/SQLJS para campos complejos
+- **Decisión**: para tablas con payloads complejos (por ejemplo `open_requests.provider`, `open_requests.images`, `site_config.hero`, `site_config.sections`), persistir como JSON serializado en columnas `text` en migración baseline y parsear en los adapters.
+- **Racional**: minimiza diferencias entre drivers y mantiene E2E con `sqljs` determinísticos sin introducir dependencias adicionales.
+
 ## Risks / Trade-offs
 
 - **[Riesgo]** Dificultad para definir un esquema mínimo coherente si el dominio aún es muy “MVP” → **Mitigación**: empezar por tablas mínimas que soporten los endpoints actuales y refinar con migraciones incrementales.
 - **[Riesgo]** E2E lentos por migraciones/limpieza → **Mitigación**: aplicar migraciones una vez por suite y truncar entre tests; evitar seeds grandes.
 - **[Riesgo]** Acoplamiento accidental de `application/` a modelos de persistencia → **Mitigación**: revisión estricta de imports y uso obligatorio de puertos + mappers en infraestructura.
 - **[Riesgo]** Diferencias dev/prod (config, SSL, credenciales) → **Mitigación**: todo por env + validación fail-fast; documentar `.env.example`.
+- **[Riesgo]** Inconsistencias de tipos/formatos de IDs (UUID vs string) entre módulos/tests → **Mitigación**: estandarizar UUID en migraciones/entidades y hacer que tests obtengan IDs reales desde endpoints (no hardcodear).
 
 ## Migration Plan
 

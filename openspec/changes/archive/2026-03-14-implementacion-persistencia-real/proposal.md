@@ -7,6 +7,7 @@ Hoy la API puede funcionar con adaptadores in-memory (especialmente en `auth` y 
 - Implementar persistencia real (TypeORM + migraciones) para **todos los módulos** que manejan datos: `auth`, `user-profile`, `site-config`, `open-requests`, `proposals` y `health` (probe de DB).
 - Crear entidades TypeORM por módulo y sus mappers dominio ↔ persistencia en `infrastructure/` (sin filtrar ORM a `domain/` ni `application/`).
 - Crear adaptadores concretos de repositorio/almacenamiento que implementen los puertos en `application/ports/*` y reemplazar el wiring in-memory por wiring DB en runtime.
+- Estandarizar IDs persistidos como **UUID** (incluyendo seeds determinísticos para fixtures de E2E).
 - Estandarizar el setup de DB de test (aplicar migraciones, limpiar estado) para que los E2E sean determinísticos.
 - **BREAKING**: la ejecución local/E2E pasa a requerir configuración `DB_*` válida y una base de datos disponible (o una alternativa determinística definida para test) para validar persistencia real.
 

@@ -1,4 +1,8 @@
-## ADDED Requirements
+## Purpose
+
+Definir los requisitos para implementar **persistencia real** (TypeORM + migraciones) para los módulos del MVP, con DDD estricto por capas, IDs UUID y E2E determinísticos sobre una DB de test.
+
+## Requirements
 
 ### Requirement: Persistencia real por módulo vía puertos y adaptadores DB
 El sistema MUST persistir datos de los módulos del MVP mediante adaptadores concretos de base de datos que implementen puertos en `application/ports/*`. Los controllers MUST delegar en casos de uso y los casos de uso MUST usar exclusivamente puertos (sin dependencias a ORM).
@@ -28,6 +32,13 @@ El sistema MUST proveer migraciones que creen el esquema mínimo necesario para 
 - **WHEN** se ejecutan migraciones sobre una base de datos vacía
 - **THEN** el esquema resultante permite iniciar la app y ejecutar operaciones de persistencia de los módulos sin errores de “tabla/columna inexistente”
 
+### Requirement: IDs persistidos son UUID
+El sistema MUST usar UUID como tipo de identificador persistido para los recursos principales (por ejemplo usuarios, open requests, site config, proposals y registration flows) y MUST evitar IDs “de demo” en el runtime (ej. `req-1`, `default`).
+
+#### Scenario: Recursos persistidos tienen ID UUID
+- **WHEN** se inspeccionan las migraciones y entidades TypeORM del baseline
+- **THEN** las columnas de identificación primaria usan tipo UUID y los seeds/fixtures usan UUIDs determinísticos
+
 ### Requirement: E2E contra DB determinística con migraciones aplicadas
 Los E2E MUST ejecutarse contra una base de datos de test determinística. Antes de validar endpoints, el esquema MUST estar listo mediante migraciones y el estado MUST limpiarse de forma determinística entre tests o suites.
 
@@ -35,9 +46,17 @@ Los E2E MUST ejecutarse contra una base de datos de test determinística. Antes 
 - **WHEN** se ejecuta la suite E2E dos veces seguidas en el mismo entorno
 - **THEN** los resultados son consistentes y no dependen del orden ni de estado sucio residual en DB
 
+### Requirement: Persistencia portable de payloads complejos (JSON)
+Cuando un módulo requiera persistir payloads complejos (objetos/arrays), el sistema MUST persistirlos de forma portable entre los drivers soportados (por ejemplo `postgres` y `sqljs`) y MUST reconstruir el shape requerido por los endpoints al leer.
+
+#### Scenario: Lectura reconstruye arrays/objetos
+- **WHEN** el backend lee registros que contienen campos JSON persistidos (por ejemplo `images`, `provider`, `sections`)
+- **THEN** el endpoint retorna arrays/objetos con el shape esperado (por ejemplo `images` es siempre un array)
+
 ### Requirement: Health incluye probe de conectividad a DB
 El sistema MUST exponer un probe de DB en el módulo `health` que valide conectividad real contra la base de datos usada por el runtime.
 
 #### Scenario: Health detecta DB no disponible
 - **WHEN** la base de datos no es alcanzable o falla una operación simple de conectividad
 - **THEN** el probe reporta estado no saludable (unhealthy) de forma consistente
+
