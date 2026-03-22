@@ -29,6 +29,7 @@ CMD ["dist/apps/api/main.js"]
 
 FROM node:18-bookworm-slim AS dev
 WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends procps && rm -rf /var/lib/apt/lists/*
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 EXPOSE 3000

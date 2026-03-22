@@ -1,7 +1,15 @@
-import { Body, Controller, HttpCode, Patch, Req, UnauthorizedException } from '@nestjs/common';
+import { Body, Controller, HttpCode, Inject, Patch, Req, UnauthorizedException } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { RequirePermissions } from '../../../../shared/security/require-permissions.decorator';
+import { Public } from '../../../../shared/security/public.decorator';
+import { getCookieValue } from '../../../../shared/http/cookies';
+import { AuthTokenRegistry } from '../../../auth/infrastructure/adapters/auth-token-registry';
+import { AUTH_REGISTRATION_FLOW_STORE } from '../../../auth/application/ports/tokens';
+import type { RegistrationFlowStorePort } from '../../../auth/application/ports/registration-flow-store.port';
+import { USER_PROFILE_USER_REPOSITORY } from '../../application/ports';
+import type { UserProfileRepositoryPort } from '../../application/ports';
+import type { UserRole } from '../../domain';
 import {
   UpdateClientProfileRequestDto,
   UpdateLocationRequestDto,
@@ -22,6 +30,16 @@ import { UpdatePersonalInfoUseCase } from '../../application/use-cases/update-pe
 type RequestUser = { token: string; userId?: string; roles: string[]; permissions: string[] };
 type RequestWithUser = Request & { user?: RequestUser };
 
+const REG_FLOW_COOKIE = 'aj_reg_flow';
+
+function getBearerToken(req: Request): string | null {
+  const authorization = (req.headers['authorization'] as string | undefined) ?? '';
+  if (!authorization.trim()) return null;
+  if (!authorization.toLowerCase().startsWith('bearer ')) return null;
+  const token = authorization.slice('bearer '.length).trim();
+  return token.length > 0 ? token : null;
+}
+
 @ApiTags('Users')
 @Controller('users/me')
 export class UserProfileController {
@@ -30,19 +48,43 @@ export class UserProfileController {
     private readonly updateWorkerProfileUseCase: UpdateWorkerProfileUseCase,
     private readonly updateClientProfileUseCase: UpdateClientProfileUseCase,
     private readonly updatePersonalInfoUseCase: UpdatePersonalInfoUseCase,
+    @Inject(AUTH_REGISTRATION_FLOW_STORE) private readonly regFlowStore: RegistrationFlowStorePort,
+    private readonly tokenRegistry: AuthTokenRegistry,
+    @Inject(USER_PROFILE_USER_REPOSITORY) private readonly userRepo: UserProfileRepositoryPort,
   ) {}
 
-  @RequirePermissions('users.me.write')
+  private async resolveUserContext(req: RequestWithUser): Promise<{ userId: string; roles: UserRole[] }> {
+    // 1) Si viene Authorization, resolver desde el registry (login).
+    const token = getBearerToken(req);
+    if (token) {
+      const session = this.tokenRegistry.resolve(token);
+      if (session?.userId) {
+        return { userId: session.userId, roles: (session.roles ?? []) as UserRole[] };
+      }
+    }
+
+    // 2) Onboarding: resolver desde cookie del flujo de registro.
+    const flowId = getCookieValue(req.headers.cookie, REG_FLOW_COOKIE);
+    if (!flowId) throw new UnauthorizedException();
+    const flow = await this.regFlowStore.getFlow(flowId);
+    if (!flow?.userId) throw new UnauthorizedException();
+
+    const user = await this.userRepo.findById(flow.userId);
+    if (!user) throw new UnauthorizedException();
+
+    return { userId: flow.userId, roles: (user.roles ?? []) as UserRole[] };
+  }
+
+  @Public()
   @PatchMeLocationSwagger()
   @HttpCode(204)
   @Patch('location')
   async updateLocation(@Req() req: RequestWithUser, @Body() body: UpdateLocationRequestDto): Promise<void> {
-    const userId = req.user?.userId;
-    if (!userId) throw new UnauthorizedException();
+    const { userId } = await this.resolveUserContext(req);
     await this.updateLocationUseCase.execute({ userId, ...body });
   }
 
-  @RequirePermissions('users.me.write')
+  @Public()
   @PatchMeWorkerProfileSwagger()
   @HttpCode(204)
   @Patch('worker-profile')
@@ -50,18 +92,17 @@ export class UserProfileController {
     @Req() req: RequestWithUser,
     @Body() body: UpdateWorkerProfileRequestDto,
   ): Promise<void> {
-    const userId = req.user?.userId;
-    if (!userId) throw new UnauthorizedException();
+    const { userId, roles } = await this.resolveUserContext(req);
     await this.updateWorkerProfileUseCase.execute({
       userId,
-      actorRoles: (req.user?.roles ?? []) as any,
+      actorRoles: roles as any,
       categories: body.categories,
       headline: body.headline,
       bio: body.bio,
     });
   }
 
-  @RequirePermissions('users.me.write')
+  @Public()
   @PatchMeClientProfileSwagger()
   @HttpCode(204)
   @Patch('client-profile')
@@ -69,12 +110,11 @@ export class UserProfileController {
     @Req() req: RequestWithUser,
     @Body() body: UpdateClientProfileRequestDto,
   ): Promise<void> {
-    const userId = req.user?.userId;
-    if (!userId) throw new UnauthorizedException();
+    const { userId } = await this.resolveUserContext(req);
     await this.updateClientProfileUseCase.execute({ userId, ...body });
   }
 
-  @RequirePermissions('users.me.write')
+  @Public()
   @PatchMePersonalInfoSwagger()
   @HttpCode(204)
   @Patch('personal-info')
@@ -82,11 +122,10 @@ export class UserProfileController {
     @Req() req: RequestWithUser,
     @Body() body: UpdatePersonalInfoRequestDto,
   ): Promise<void> {
-    const userId = req.user?.userId;
-    if (!userId) throw new UnauthorizedException();
+    const { userId, roles } = await this.resolveUserContext(req);
     await this.updatePersonalInfoUseCase.execute({
       userId,
-      actorRoles: (req.user?.roles ?? []) as any,
+      actorRoles: roles as any,
       ...body,
     });
   }

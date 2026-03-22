@@ -78,7 +78,8 @@ export class AuthController {
       httpOnly: true,
       sameSite: 'lax',
       secure: isProd,
-      path: '/auth',
+      // Debe aplicarse a todo el flujo de onboarding (ej. /users/me/location)
+      path: '/',
     });
 
     return {

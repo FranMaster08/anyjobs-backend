@@ -37,7 +37,7 @@ import { TypeOrmRegistrationFlowStore } from './infrastructure/adapters/typeorm-
     { provide: AUTH_TOKEN_SERVICE, useClass: UuidTokenService },
     { provide: AUTH_REGISTRATION_FLOW_STORE, useClass: TypeOrmRegistrationFlowStore },
   ],
-  exports: [AuthTokenRegistry],
+  exports: [AuthTokenRegistry, AUTH_REGISTRATION_FLOW_STORE],
 })
 export class AuthModule {}
 

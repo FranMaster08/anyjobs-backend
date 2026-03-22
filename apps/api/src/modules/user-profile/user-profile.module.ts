@@ -8,9 +8,10 @@ import { USER_PROFILE_USER_REPOSITORY } from './application/ports/tokens';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserEntity } from '../../shared/persistence/entities';
 import { TypeOrmUserProfileRepository } from './infrastructure/adapters/typeorm-user-profile.repository';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([UserEntity])],
+  imports: [TypeOrmModule.forFeature([UserEntity]), AuthModule],
   controllers: [UserProfileController],
   providers: [
     UpdateLocationUseCase,
