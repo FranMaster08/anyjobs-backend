@@ -3,23 +3,23 @@ import { UserEntity } from '../../../../shared/persistence/entities';
 
 @Entity({ name: 'auth_registration_flows' })
 export class RegistrationFlowEntity {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn('uuid', { name: 'flow_id' })
   flowId!: string;
 
-  @Column({ type: 'uuid' })
+  @Column({ name: 'user_id', type: 'uuid' })
   userId!: string;
 
   @ManyToOne(() => UserEntity, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'userId' })
+  @JoinColumn({ name: 'user_id' })
   user!: UserEntity;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
 
-  @Column({ type: 'boolean', default: false })
+  @Column({ name: 'email_verified', type: 'boolean', default: false })
   emailVerified!: boolean;
 
-  @Column({ type: 'boolean', default: false })
+  @Column({ name: 'phone_verified', type: 'boolean', default: false })
   phoneVerified!: boolean;
 }
 

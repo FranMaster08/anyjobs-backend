@@ -16,7 +16,7 @@ async function main(): Promise<void> {
     // Site config (id fijo)
     await dataSource.query(
       `
-      INSERT INTO site_config (id, "brandName", hero, sections)
+      INSERT INTO site_config (id, brand_name, hero, sections)
       VALUES ($1, $2, $3, $4)
       ON CONFLICT (id) DO NOTHING
     `,
@@ -60,9 +60,9 @@ async function main(): Promise<void> {
     await dataSource.query(
       `
       INSERT INTO open_requests (
-        id, title, excerpt, description, tags, "locationLabel", "publishedAtLabel", "publishedAtSort",
-        "budgetLabel", "imageUrl", "imageAlt", provider, reputation, "reviewsCount", "providerReviews",
-        "contactPhone", "contactEmail", images
+        id, title, excerpt, description, tags, location_label, published_at_label, published_at_sort,
+        budget_label, image_url, image_alt, provider, reputation, reviews_count, provider_reviews,
+        contact_phone, contact_email, images
       )
       VALUES
         ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18),
@@ -134,9 +134,9 @@ async function main(): Promise<void> {
     await dataSource.query(
       `
       INSERT INTO open_requests (
-        id, title, excerpt, description, tags, "locationLabel", "publishedAtLabel", "publishedAtSort",
-        "budgetLabel", "imageUrl", "imageAlt", provider, reputation, "reviewsCount", "providerReviews",
-        "contactPhone", "contactEmail", images
+        id, title, excerpt, description, tags, location_label, published_at_label, published_at_sort,
+        budget_label, image_url, image_alt, provider, reputation, reviews_count, provider_reviews,
+        contact_phone, contact_email, images
       )
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
       ON CONFLICT (id) DO UPDATE SET
@@ -144,18 +144,18 @@ async function main(): Promise<void> {
         excerpt = EXCLUDED.excerpt,
         description = EXCLUDED.description,
         tags = EXCLUDED.tags,
-        "locationLabel" = EXCLUDED."locationLabel",
-        "publishedAtLabel" = EXCLUDED."publishedAtLabel",
-        "publishedAtSort" = EXCLUDED."publishedAtSort",
-        "budgetLabel" = EXCLUDED."budgetLabel",
-        "imageUrl" = EXCLUDED."imageUrl",
-        "imageAlt" = EXCLUDED."imageAlt",
+        location_label = EXCLUDED.location_label,
+        published_at_label = EXCLUDED.published_at_label,
+        published_at_sort = EXCLUDED.published_at_sort,
+        budget_label = EXCLUDED.budget_label,
+        image_url = EXCLUDED.image_url,
+        image_alt = EXCLUDED.image_alt,
         provider = EXCLUDED.provider,
         reputation = EXCLUDED.reputation,
-        "reviewsCount" = EXCLUDED."reviewsCount",
-        "providerReviews" = EXCLUDED."providerReviews",
-        "contactPhone" = EXCLUDED."contactPhone",
-        "contactEmail" = EXCLUDED."contactEmail",
+        reviews_count = EXCLUDED.reviews_count,
+        provider_reviews = EXCLUDED.provider_reviews,
+        contact_phone = EXCLUDED.contact_phone,
+        contact_email = EXCLUDED.contact_email,
         images = EXCLUDED.images
     `,
       [
@@ -202,20 +202,20 @@ async function main(): Promise<void> {
     await dataSource.query(
       `
       INSERT INTO users (
-        id, "fullName", email, "phoneNumber", "passwordHash", roles, status,
-        "emailVerified", "phoneVerified", "countryCode", city, area
+        id, full_name, email, phone_number, password_hash, roles, status,
+        email_verified, phone_verified, country_code, city, area
       )
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
       ON CONFLICT (email) DO UPDATE SET
         id = EXCLUDED.id,
-        "fullName" = EXCLUDED."fullName",
-        "phoneNumber" = EXCLUDED."phoneNumber",
-        "passwordHash" = EXCLUDED."passwordHash",
+        full_name = EXCLUDED.full_name,
+        phone_number = EXCLUDED.phone_number,
+        password_hash = EXCLUDED.password_hash,
         roles = EXCLUDED.roles,
         status = EXCLUDED.status,
-        "emailVerified" = EXCLUDED."emailVerified",
-        "phoneVerified" = EXCLUDED."phoneVerified",
-        "countryCode" = EXCLUDED."countryCode",
+        email_verified = EXCLUDED.email_verified,
+        phone_verified = EXCLUDED.phone_verified,
+        country_code = EXCLUDED.country_code,
         city = EXCLUDED.city,
         area = EXCLUDED.area
     `,

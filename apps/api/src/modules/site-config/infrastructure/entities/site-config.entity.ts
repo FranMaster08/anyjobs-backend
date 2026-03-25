@@ -5,7 +5,7 @@ export class SiteConfigEntity {
   @PrimaryColumn({ type: 'uuid' })
   id!: string;
 
-  @Column({ type: 'varchar', length: 200 })
+  @Column({ name: 'brand_name', type: 'varchar', length: 200 })
   brandName!: string;
 
   @Column({ type: 'simple-json' })

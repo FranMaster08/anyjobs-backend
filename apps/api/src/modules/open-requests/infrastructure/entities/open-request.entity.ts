@@ -17,23 +17,23 @@ export class OpenRequestEntity {
   @Column({ type: 'simple-array' })
   tags!: string[];
 
-  @Column({ type: 'varchar', length: 200 })
+  @Column({ name: 'location_label', type: 'varchar', length: 200 })
   locationLabel!: string;
 
-  @Column({ type: 'varchar', length: 64 })
+  @Column({ name: 'published_at_label', type: 'varchar', length: 64 })
   publishedAtLabel!: string;
 
   @Index()
-  @Column({ type: 'bigint' })
+  @Column({ name: 'published_at_sort', type: 'bigint' })
   publishedAtSort!: string; // stored as string to be portable across drivers
 
-  @Column({ type: 'varchar', length: 64 })
+  @Column({ name: 'budget_label', type: 'varchar', length: 64 })
   budgetLabel!: string;
 
-  @Column({ type: 'varchar', length: 500 })
+  @Column({ name: 'image_url', type: 'varchar', length: 500 })
   imageUrl!: string;
 
-  @Column({ type: 'varchar', length: 200 })
+  @Column({ name: 'image_alt', type: 'varchar', length: 200 })
   imageAlt!: string;
 
   @Column({ type: 'simple-json' })
@@ -42,16 +42,16 @@ export class OpenRequestEntity {
   @Column({ type: 'float' })
   reputation!: number;
 
-  @Column({ type: 'int' })
+  @Column({ name: 'reviews_count', type: 'int' })
   reviewsCount!: number;
 
-  @Column({ type: 'simple-json' })
+  @Column({ name: 'provider_reviews', type: 'simple-json' })
   providerReviews!: { author: string; rating: number; dateLabel: string; text: string }[];
 
-  @Column({ type: 'varchar', length: 32 })
+  @Column({ name: 'contact_phone', type: 'varchar', length: 32 })
   contactPhone!: string;
 
-  @Column({ type: 'varchar', length: 320 })
+  @Column({ name: 'contact_email', type: 'varchar', length: 320 })
   contactEmail!: string;
 
   @Column({ type: 'simple-json' })

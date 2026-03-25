@@ -13,27 +13,27 @@ export class CreateCoreTables20260314200000 implements MigrationInterface {
         name: 'users',
         columns: [
           { name: 'id', type: 'uuid', isPrimary: true, isGenerated: true, generationStrategy: 'uuid' },
-          { name: 'fullName', type: 'varchar', length: '200' },
+          { name: 'full_name', type: 'varchar', length: '200' },
           { name: 'email', type: 'varchar', length: '320' },
-          { name: 'phoneNumber', type: 'varchar', length: '32' },
-          { name: 'passwordHash', type: 'varchar', length: '255' },
+          { name: 'phone_number', type: 'varchar', length: '32' },
+          { name: 'password_hash', type: 'varchar', length: '255' },
           { name: 'roles', type: 'varchar' },
           { name: 'status', type: 'varchar', length: '16' },
-          { name: 'emailVerified', type: 'boolean', default: false },
-          { name: 'phoneVerified', type: 'boolean', default: false },
-          { name: 'createdAt', type: 'timestamp', default: 'CURRENT_TIMESTAMP' },
-          { name: 'updatedAt', type: 'timestamp', default: 'CURRENT_TIMESTAMP' },
-          { name: 'countryCode', type: 'varchar', length: '8', isNullable: true },
+          { name: 'email_verified', type: 'boolean', default: false },
+          { name: 'phone_verified', type: 'boolean', default: false },
+          { name: 'created_at', type: 'timestamp', default: 'CURRENT_TIMESTAMP' },
+          { name: 'updated_at', type: 'timestamp', default: 'CURRENT_TIMESTAMP' },
+          { name: 'country_code', type: 'varchar', length: '8', isNullable: true },
           { name: 'city', type: 'varchar', length: '120', isNullable: true },
           { name: 'area', type: 'varchar', length: '120', isNullable: true },
-          { name: 'coverageRadiusKm', type: 'int', isNullable: true },
-          { name: 'workerCategories', type: 'varchar', isNullable: true },
-          { name: 'workerHeadline', type: 'varchar', length: '200', isNullable: true },
-          { name: 'workerBio', type: 'text', isNullable: true },
-          { name: 'preferredPaymentMethod', type: 'varchar', length: '16', isNullable: true },
-          { name: 'documentType', type: 'varchar', length: '16', isNullable: true },
-          { name: 'documentNumber', type: 'varchar', length: '64', isNullable: true },
-          { name: 'birthDate', type: 'varchar', length: '10', isNullable: true },
+          { name: 'coverage_radius_km', type: 'int', isNullable: true },
+          { name: 'worker_categories', type: 'varchar', isNullable: true },
+          { name: 'worker_headline', type: 'varchar', length: '200', isNullable: true },
+          { name: 'worker_bio', type: 'text', isNullable: true },
+          { name: 'preferred_payment_method', type: 'varchar', length: '16', isNullable: true },
+          { name: 'document_type', type: 'varchar', length: '16', isNullable: true },
+          { name: 'document_number', type: 'varchar', length: '64', isNullable: true },
+          { name: 'birth_date', type: 'varchar', length: '10', isNullable: true },
           { name: 'gender', type: 'varchar', length: '24', isNullable: true },
           { name: 'nationality', type: 'varchar', length: '120', isNullable: true },
         ],
@@ -53,7 +53,7 @@ export class CreateCoreTables20260314200000 implements MigrationInterface {
       'users',
       new TableIndex({
         name: 'IDX_users_phone_unique',
-        columnNames: ['phoneNumber'],
+        columnNames: ['phone_number'],
         isUnique: true,
       }),
     );
@@ -62,11 +62,11 @@ export class CreateCoreTables20260314200000 implements MigrationInterface {
       new Table({
         name: 'auth_registration_flows',
         columns: [
-          { name: 'flowId', type: 'uuid', isPrimary: true, isGenerated: true, generationStrategy: 'uuid' },
-          { name: 'userId', type: 'uuid' },
-          { name: 'createdAt', type: 'timestamp', default: 'CURRENT_TIMESTAMP' },
-          { name: 'emailVerified', type: 'boolean', default: false },
-          { name: 'phoneVerified', type: 'boolean', default: false },
+          { name: 'flow_id', type: 'uuid', isPrimary: true, isGenerated: true, generationStrategy: 'uuid' },
+          { name: 'user_id', type: 'uuid' },
+          { name: 'created_at', type: 'timestamp', default: 'CURRENT_TIMESTAMP' },
+          { name: 'email_verified', type: 'boolean', default: false },
+          { name: 'phone_verified', type: 'boolean', default: false },
         ],
       }),
       true,
@@ -74,7 +74,7 @@ export class CreateCoreTables20260314200000 implements MigrationInterface {
     await queryRunner.createForeignKey(
       'auth_registration_flows',
       new TableForeignKey({
-        columnNames: ['userId'],
+        columnNames: ['user_id'],
         referencedTableName: 'users',
         referencedColumnNames: ['id'],
         onDelete: 'CASCADE',
@@ -86,25 +86,35 @@ export class CreateCoreTables20260314200000 implements MigrationInterface {
         name: 'proposals',
         columns: [
           { name: 'id', type: 'uuid', isPrimary: true, isGenerated: true, generationStrategy: 'uuid' },
-          { name: 'requestId', type: 'uuid' },
-          { name: 'userId', type: 'uuid' },
-          { name: 'authorName', type: 'varchar', length: '200' },
-          { name: 'authorSubtitle', type: 'varchar', length: '200' },
-          { name: 'authorRating', type: 'float', isNullable: true },
-          { name: 'authorReviewsCount', type: 'int', isNullable: true },
-          { name: 'whoAmI', type: 'varchar', length: '200' },
+          { name: 'request_id', type: 'uuid' },
+          { name: 'user_id', type: 'uuid' },
+          { name: 'author_name', type: 'varchar', length: '200' },
+          { name: 'author_subtitle', type: 'varchar', length: '200' },
+          { name: 'author_rating', type: 'float', isNullable: true },
+          { name: 'author_reviews_count', type: 'int', isNullable: true },
+          { name: 'who_am_i', type: 'varchar', length: '200' },
           { name: 'message', type: 'text' },
           { name: 'estimate', type: 'varchar', length: '200' },
-          { name: 'createdAt', type: 'timestamp', default: 'CURRENT_TIMESTAMP' },
+          { name: 'created_at', type: 'timestamp', default: 'CURRENT_TIMESTAMP' },
           { name: 'status', type: 'varchar', length: '16', default: "'SENT'" },
         ],
       }),
       true,
     );
-    await queryRunner.createIndex('proposals', new TableIndex({ name: 'IDX_proposals_userId', columnNames: ['userId'] }));
+    await queryRunner.createIndex('proposals', new TableIndex({ name: 'IDX_proposals_user_id', columnNames: ['user_id'] }));
     await queryRunner.createIndex(
       'proposals',
-      new TableIndex({ name: 'IDX_proposals_requestId', columnNames: ['requestId'] }),
+      new TableIndex({ name: 'IDX_proposals_request_id', columnNames: ['request_id'] }),
+    );
+
+    await queryRunner.createForeignKey(
+      'proposals',
+      new TableForeignKey({
+        columnNames: ['user_id'],
+        referencedTableName: 'users',
+        referencedColumnNames: ['id'],
+        onDelete: 'CASCADE',
+      }),
     );
 
     await queryRunner.createTable(
@@ -116,18 +126,18 @@ export class CreateCoreTables20260314200000 implements MigrationInterface {
           { name: 'excerpt', type: 'varchar', length: '400' },
           { name: 'description', type: 'text' },
           { name: 'tags', type: 'varchar' },
-          { name: 'locationLabel', type: 'varchar', length: '200' },
-          { name: 'publishedAtLabel', type: 'varchar', length: '64' },
-          { name: 'publishedAtSort', type: 'bigint' },
-          { name: 'budgetLabel', type: 'varchar', length: '64' },
-          { name: 'imageUrl', type: 'varchar', length: '500' },
-          { name: 'imageAlt', type: 'varchar', length: '200' },
+          { name: 'location_label', type: 'varchar', length: '200' },
+          { name: 'published_at_label', type: 'varchar', length: '64' },
+          { name: 'published_at_sort', type: 'bigint' },
+          { name: 'budget_label', type: 'varchar', length: '64' },
+          { name: 'image_url', type: 'varchar', length: '500' },
+          { name: 'image_alt', type: 'varchar', length: '200' },
           { name: 'provider', type: 'text' },
           { name: 'reputation', type: 'float' },
-          { name: 'reviewsCount', type: 'int' },
-          { name: 'providerReviews', type: 'text' },
-          { name: 'contactPhone', type: 'varchar', length: '32' },
-          { name: 'contactEmail', type: 'varchar', length: '320' },
+          { name: 'reviews_count', type: 'int' },
+          { name: 'provider_reviews', type: 'text' },
+          { name: 'contact_phone', type: 'varchar', length: '32' },
+          { name: 'contact_email', type: 'varchar', length: '320' },
           { name: 'images', type: 'text' },
         ],
       }),
@@ -135,7 +145,17 @@ export class CreateCoreTables20260314200000 implements MigrationInterface {
     );
     await queryRunner.createIndex(
       'open_requests',
-      new TableIndex({ name: 'IDX_open_requests_publishedAtSort', columnNames: ['publishedAtSort'] }),
+      new TableIndex({ name: 'IDX_open_requests_published_at_sort', columnNames: ['published_at_sort'] }),
+    );
+
+    await queryRunner.createForeignKey(
+      'proposals',
+      new TableForeignKey({
+        columnNames: ['request_id'],
+        referencedTableName: 'open_requests',
+        referencedColumnNames: ['id'],
+        onDelete: 'CASCADE',
+      }),
     );
 
     await queryRunner.createTable(
@@ -143,7 +163,7 @@ export class CreateCoreTables20260314200000 implements MigrationInterface {
         name: 'site_config',
         columns: [
           { name: 'id', type: 'uuid', isPrimary: true },
-          { name: 'brandName', type: 'varchar', length: '200' },
+          { name: 'brand_name', type: 'varchar', length: '200' },
           { name: 'hero', type: 'text' },
           { name: 'sections', type: 'text' },
         ],

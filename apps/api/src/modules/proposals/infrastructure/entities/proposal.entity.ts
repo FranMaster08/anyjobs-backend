@@ -1,4 +1,6 @@
-import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { OpenRequestEntity } from '../../../open-requests/infrastructure/entities/open-request.entity';
+import { UserEntity } from '../../../../shared/persistence/entities';
 
 @Entity({ name: 'proposals' })
 export class ProposalEntity {
@@ -6,26 +8,34 @@ export class ProposalEntity {
   id!: string;
 
   @Index()
-  @Column({ type: 'uuid' })
+  @Column({ name: 'request_id', type: 'uuid' })
   requestId!: string;
 
+  @ManyToOne(() => OpenRequestEntity, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'request_id' })
+  request!: OpenRequestEntity;
+
   @Index()
-  @Column({ type: 'uuid' })
+  @Column({ name: 'user_id', type: 'uuid' })
   userId!: string;
 
-  @Column({ type: 'varchar', length: 200 })
+  @ManyToOne(() => UserEntity, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'user_id' })
+  user!: UserEntity;
+
+  @Column({ name: 'author_name', type: 'varchar', length: 200 })
   authorName!: string;
 
-  @Column({ type: 'varchar', length: 200 })
+  @Column({ name: 'author_subtitle', type: 'varchar', length: 200 })
   authorSubtitle!: string;
 
-  @Column({ type: 'float', nullable: true })
+  @Column({ name: 'author_rating', type: 'float', nullable: true })
   authorRating!: number | null;
 
-  @Column({ type: 'int', nullable: true })
+  @Column({ name: 'author_reviews_count', type: 'int', nullable: true })
   authorReviewsCount!: number | null;
 
-  @Column({ type: 'varchar', length: 200 })
+  @Column({ name: 'who_am_i', type: 'varchar', length: 200 })
   whoAmI!: string;
 
   @Column({ type: 'text' })
@@ -34,7 +44,7 @@ export class ProposalEntity {
   @Column({ type: 'varchar', length: 200 })
   estimate!: string;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
 
   @Column({ type: 'varchar', length: 16, default: 'SENT' })

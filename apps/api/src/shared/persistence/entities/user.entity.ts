@@ -12,7 +12,7 @@ export class UserEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ type: 'varchar', length: 200 })
+  @Column({ name: 'full_name', type: 'varchar', length: 200 })
   fullName!: string;
 
   @Index({ unique: true })
@@ -20,10 +20,10 @@ export class UserEntity {
   email!: string;
 
   @Index({ unique: true })
-  @Column({ type: 'varchar', length: 32 })
+  @Column({ name: 'phone_number', type: 'varchar', length: 32 })
   phoneNumber!: string;
 
-  @Column({ type: 'varchar', length: 255 })
+  @Column({ name: 'password_hash', type: 'varchar', length: 255 })
   passwordHash!: string;
 
   @Column({ type: 'simple-array' })
@@ -32,19 +32,19 @@ export class UserEntity {
   @Column({ type: 'varchar', length: 16 })
   status!: string; // PENDING | ACTIVE
 
-  @Column({ type: 'boolean', default: false })
+  @Column({ name: 'email_verified', type: 'boolean', default: false })
   emailVerified!: boolean;
 
-  @Column({ type: 'boolean', default: false })
+  @Column({ name: 'phone_verified', type: 'boolean', default: false })
   phoneVerified!: boolean;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ name: 'updated_at' })
   updatedAt!: Date;
 
-  @Column({ type: 'varchar', length: 8, nullable: true })
+  @Column({ name: 'country_code', type: 'varchar', length: 8, nullable: true })
   countryCode!: string | null;
 
   @Column({ type: 'varchar', length: 120, nullable: true })
@@ -53,28 +53,28 @@ export class UserEntity {
   @Column({ type: 'varchar', length: 120, nullable: true })
   area!: string | null;
 
-  @Column({ type: 'int', nullable: true })
+  @Column({ name: 'coverage_radius_km', type: 'int', nullable: true })
   coverageRadiusKm!: number | null;
 
-  @Column({ type: 'simple-array', nullable: true })
+  @Column({ name: 'worker_categories', type: 'simple-array', nullable: true })
   workerCategories!: string[] | null;
 
-  @Column({ type: 'varchar', length: 200, nullable: true })
+  @Column({ name: 'worker_headline', type: 'varchar', length: 200, nullable: true })
   workerHeadline!: string | null;
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ name: 'worker_bio', type: 'text', nullable: true })
   workerBio!: string | null;
 
-  @Column({ type: 'varchar', length: 16, nullable: true })
+  @Column({ name: 'preferred_payment_method', type: 'varchar', length: 16, nullable: true })
   preferredPaymentMethod!: string | null;
 
-  @Column({ type: 'varchar', length: 16, nullable: true })
+  @Column({ name: 'document_type', type: 'varchar', length: 16, nullable: true })
   documentType!: string | null;
 
-  @Column({ type: 'varchar', length: 64, nullable: true })
+  @Column({ name: 'document_number', type: 'varchar', length: 64, nullable: true })
   documentNumber!: string | null;
 
-  @Column({ type: 'varchar', length: 10, nullable: true })
+  @Column({ name: 'birth_date', type: 'varchar', length: 10, nullable: true })
   birthDate!: string | null; // YYYY-MM-DD
 
   @Column({ type: 'varchar', length: 24, nullable: true })
