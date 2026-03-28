@@ -121,6 +121,7 @@ Ver `.env.example`. Variables mínimas:
 - `PAGINATION_MAX_PAGE_SIZE`
 - `SWAGGER_ENABLED` (true|false)
 - `SWAGGER_PATH` (ej. docs)
+- `AUTH_SWAGGER_ON` (true|false, habilita autenticación interactiva en Swagger solo en desarrollo)
 
 La app no inicia si faltan variables requeridas (fail-fast).
 
@@ -206,6 +207,13 @@ Para pruebas E2E se usa un stub simple vía headers:
 
 ### Swagger
 - Si `SWAGGER_ENABLED=true`, Swagger se publica en `/{SWAGGER_PATH}` (por defecto `/docs`).
+- Si `NODE_ENV=development` y `AUTH_SWAGGER_ON=true`, Swagger UI habilita `Authorize` para probar endpoints con Bearer token.
+- Flujo de uso en desarrollo:
+  - Ejecutar `POST /auth/login` desde Swagger.
+  - Copiar el valor de `token` de la respuesta.
+  - Abrir `Authorize` y pegar `Bearer <token>`.
+  - Ejecutar endpoints protegidos desde la misma UI.
+- Fuera de desarrollo, la documentación de seguridad sigue visible para endpoints protegidos, pero la UI de autorización no se expone.
 - Los controllers deben mantenerse limpios; la documentación Swagger vive en `apps/api/src/modules/<module>/api/swagger/` como decoradores compuestos.
 
 ## Estructura (DDD por módulo)

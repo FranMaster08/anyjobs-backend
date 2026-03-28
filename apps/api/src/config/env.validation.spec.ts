@@ -17,6 +17,7 @@ describe('env.validation', () => {
       PAGINATION_DEFAULT_PAGE_SIZE: '20',
       PAGINATION_MAX_PAGE_SIZE: '100',
       SWAGGER_ENABLED: 'false',
+      AUTH_SWAGGER_ON: 'true',
       DB_TYPE: 'postgres',
       DB_HOST: 'localhost',
       DB_PORT: '5432',
@@ -31,6 +32,7 @@ describe('env.validation', () => {
 
     expect(env.LOG_DEBUG_PAYLOADS).toBe(false);
     expect(env.SWAGGER_ENABLED).toBe(false);
+    expect(env.AUTH_SWAGGER_ON).toBe(true);
     expect(env.DB_SSL).toBe(false);
     expect(env.DB_LOGGING).toBe(false);
     expect(env.DB_SYNCHRONIZE).toBe(false);

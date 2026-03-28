@@ -36,6 +36,7 @@ export interface AppConfiguration {
   swagger: {
     enabled: boolean;
     path: string;
+    authEnabled: boolean;
   };
 }
 
@@ -89,6 +90,7 @@ export const configuration = (): AppConfiguration => {
     swagger: {
       enabled: env.SWAGGER_ENABLED,
       path: env.SWAGGER_PATH,
+      authEnabled: env.AUTH_SWAGGER_ON,
     },
   };
 };

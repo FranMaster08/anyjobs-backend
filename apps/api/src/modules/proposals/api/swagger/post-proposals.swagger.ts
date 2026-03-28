@@ -1,5 +1,6 @@
 import { applyDecorators } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiBadRequestResponse,
   ApiCreatedResponse,
   ApiForbiddenResponse,
@@ -13,6 +14,7 @@ import { ProposalDto } from '../dtos';
 export function PostProposalsSwagger() {
   return applyDecorators(
     ApiTags('Proposals'),
+    ApiBearerAuth('bearer'),
     ApiOperation({
       summary: 'Crear proposal',
       description: 'Crea una propuesta en estado SENT.',

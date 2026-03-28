@@ -5,7 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { nestLoggerLevels } from './shared/logging/app-logger';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { setupSwagger } from './shared/swagger/setup-swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
@@ -23,17 +23,7 @@ async function bootstrap() {
     }),
   );
 
-  const swaggerEnabled = config.get<boolean>('swagger.enabled') ?? false;
-  const swaggerPath = config.get<string>('swagger.path') ?? 'docs';
-  if (swaggerEnabled) {
-    const swaggerConfig = new DocumentBuilder()
-      .setTitle('AnyJobs API')
-      .setDescription('API backend AnyJobs')
-      .setVersion('0.1.0')
-      .build();
-    const document = SwaggerModule.createDocument(app, swaggerConfig);
-    SwaggerModule.setup(swaggerPath, app, document);
-  }
+  setupSwagger(app, config);
 
   await app.listen(port);
 }

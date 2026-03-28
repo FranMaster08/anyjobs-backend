@@ -1,5 +1,6 @@
 import { applyDecorators } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiBadRequestResponse,
   ApiForbiddenResponse,
   ApiNoContentResponse,
@@ -12,6 +13,7 @@ import { ErrorResponseDto } from '../../../../shared/api/dtos/error-response.dto
 export function PatchMeClientProfileSwagger() {
   return applyDecorators(
     ApiTags('Users'),
+    ApiBearerAuth('bearer'),
     ApiOperation({
       summary: 'Actualizar client profile del usuario actual',
       description: 'Actualiza preferredPaymentMethod.',

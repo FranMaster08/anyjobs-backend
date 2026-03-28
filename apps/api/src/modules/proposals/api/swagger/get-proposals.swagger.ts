@@ -1,5 +1,6 @@
 import { applyDecorators } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiBadRequestResponse,
   ApiForbiddenResponse,
   ApiOkResponse,
@@ -13,6 +14,7 @@ import { ProposalsListResponseDto } from '../dtos';
 export function GetProposalsSwagger() {
   return applyDecorators(
     ApiTags('Proposals'),
+    ApiBearerAuth('bearer'),
     ApiOperation({
       summary: 'Listar proposals (paginado)',
       description: 'Lista proposals con filtros opcionales y paginación estándar (items+meta).',

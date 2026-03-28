@@ -37,6 +37,7 @@ const baseSchema = z.object({
 
   SWAGGER_ENABLED: booleanFromEnv.optional().default(true),
   SWAGGER_PATH: z.string().optional().default('docs'),
+  AUTH_SWAGGER_ON: booleanFromEnv.optional().default(true),
 });
 
 const postgresSchema = baseSchema.extend({

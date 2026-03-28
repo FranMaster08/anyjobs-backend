@@ -26,6 +26,7 @@ services:
 
       SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
       SWAGGER_PATH: ${SWAGGER_PATH:-docs}
+      AUTH_SWAGGER_ON: ${AUTH_SWAGGER_ON:-true}
 
       DB_TYPE: ${DB_TYPE:-postgres}
       DB_HOST: postgres

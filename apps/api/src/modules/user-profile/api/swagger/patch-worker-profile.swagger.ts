@@ -1,5 +1,6 @@
 import { applyDecorators } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiBadRequestResponse,
   ApiForbiddenResponse,
   ApiNoContentResponse,
@@ -12,6 +13,7 @@ import { ErrorResponseDto } from '../../../../shared/api/dtos/error-response.dto
 export function PatchMeWorkerProfileSwagger() {
   return applyDecorators(
     ApiTags('Users'),
+    ApiBearerAuth('bearer'),
     ApiOperation({
       summary: 'Actualizar worker profile del usuario actual',
       description: 'Actualiza categorías y opcionalmente headline/bio.',

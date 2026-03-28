@@ -1,10 +1,11 @@
 import { applyDecorators } from '@nestjs/common';
-import { ApiForbiddenResponse, ApiOkResponse, ApiOperation, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiForbiddenResponse, ApiOkResponse, ApiOperation, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 import { HealthResponseDto } from '../dtos';
 
 export function GetHealthDenySwagger() {
   return applyDecorators(
     ApiTags('Health'),
+    ApiBearerAuth('bearer'),
     ApiOperation({
       summary: 'Health check (deny-by-default)',
       description:
