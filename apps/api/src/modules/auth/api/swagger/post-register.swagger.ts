@@ -9,7 +9,7 @@ export function PostRegisterSwagger() {
     ApiOperation({
       summary: 'Registrar usuario (MVP)',
       description:
-        'Crea un usuario en estado PENDING y genera un flow de registro asociado (vía cookie same-origin) para verificar OTP sin userId.',
+        'Inicia un draft de onboarding y genera un flow de registro asociado (vía cookie same-origin) para completar verificación y datos antes de crear el usuario definitivo.',
     }),
     ApiOkResponse({ type: RegisterResponseDto }),
     ApiBadRequestResponse({ type: ErrorResponseDto }),

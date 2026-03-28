@@ -9,13 +9,15 @@ import type {
 export class InMemoryRegistrationFlowStore implements RegistrationFlowStorePort {
   private readonly flows = new Map<string, RegistrationFlowState>();
 
-  async createFlow(userId: string): Promise<RegistrationFlowState> {
+  async createFlow(
+    input: Omit<RegistrationFlowState, 'flowId' | 'createdAt' | 'updatedAt' | 'completedAt'>,
+  ): Promise<RegistrationFlowState> {
+    const now = new Date().toISOString();
     const flow: RegistrationFlowState = {
       flowId: randomUUID(),
-      userId,
-      createdAt: new Date().toISOString(),
-      emailVerified: false,
-      phoneVerified: false,
+      createdAt: now,
+      updatedAt: now,
+      ...input,
     };
     this.flows.set(flow.flowId, flow);
     return flow;
@@ -25,13 +27,33 @@ export class InMemoryRegistrationFlowStore implements RegistrationFlowStorePort 
     return this.flows.get(flowId) ?? null;
   }
 
+  async findActiveFlowByEmail(email: string): Promise<RegistrationFlowState | null> {
+    for (const flow of this.flows.values()) {
+      if (flow.email === email && !flow.completedAt) return flow;
+    }
+    return null;
+  }
+
+  async findActiveFlowByPhoneNumber(phoneNumber: string): Promise<RegistrationFlowState | null> {
+    for (const flow of this.flows.values()) {
+      if (flow.phoneNumber === phoneNumber && !flow.completedAt) return flow;
+    }
+    return null;
+  }
+
   async updateFlow(
     flowId: string,
-    patch: Partial<Pick<RegistrationFlowState, 'emailVerified' | 'phoneVerified'>>,
-  ): Promise<void> {
+    patch: Partial<Omit<RegistrationFlowState, 'flowId' | 'createdAt' | 'updatedAt'>>,
+  ): Promise<RegistrationFlowState | null> {
     const existing = this.flows.get(flowId);
-    if (!existing) return;
-    this.flows.set(flowId, { ...existing, ...patch });
+    if (!existing) return null;
+    const updated: RegistrationFlowState = {
+      ...existing,
+      ...patch,
+      updatedAt: new Date().toISOString(),
+    };
+    this.flows.set(flowId, updated);
+    return updated;
   }
 }
 

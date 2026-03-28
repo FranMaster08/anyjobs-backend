@@ -10,7 +10,8 @@ describe(LoginUseCase.name, () => {
     const userRepo = { findByEmail: jest.fn().mockResolvedValue(null) } as any;
     const passwordHasher = { verifyPassword: jest.fn() } as any;
     const tokenService = { issueToken: jest.fn() } as any;
-    const uc = new LoginUseCase(userRepo, passwordHasher, tokenService, correlationIdService, configService);
+    const tokenRegistry = { register: jest.fn() } as any;
+    const uc = new LoginUseCase(userRepo, passwordHasher, tokenService, tokenRegistry, correlationIdService, configService);
 
     await expect(uc.execute({ email: 'x@y.com', password: 'p' })).rejects.toBeInstanceOf(
       UnauthorizedException,
@@ -26,20 +27,46 @@ describe(LoginUseCase.name, () => {
         roles: ['CLIENT'],
         passwordHash: 'hash',
         phoneNumber: '+34000',
-        status: 'PENDING',
-        emailVerified: false,
-        phoneVerified: false,
+        status: 'ACTIVE',
+        emailVerified: true,
+        phoneVerified: true,
         createdAt: '2026-03-01T00:00:00.000Z',
       }),
     } as any;
     const passwordHasher = { verifyPassword: jest.fn().mockResolvedValue(true) } as any;
     const tokenService = { issueToken: jest.fn().mockResolvedValue('tok') } as any;
+    const tokenRegistry = { register: jest.fn() } as any;
 
-    const uc = new LoginUseCase(userRepo, passwordHasher, tokenService, correlationIdService, configService);
+    const uc = new LoginUseCase(userRepo, passwordHasher, tokenService, tokenRegistry, correlationIdService, configService);
     const res = await uc.execute({ email: 'x@y.com', password: 'p' });
 
     expect(res.token).toBe('tok');
     expect(res.user).toMatchObject({ id: 'u1', email: 'x@y.com' });
+  });
+
+  it('throws 401 when user is not active yet', async () => {
+    const userRepo = {
+      findByEmail: jest.fn().mockResolvedValue({
+        id: 'u1',
+        fullName: 'Pending',
+        email: 'x@y.com',
+        roles: ['CLIENT'],
+        passwordHash: 'hash',
+        phoneNumber: '+34000',
+        status: 'PENDING',
+        emailVerified: true,
+        phoneVerified: false,
+        createdAt: '2026-03-01T00:00:00.000Z',
+      }),
+    } as any;
+    const passwordHasher = { verifyPassword: jest.fn().mockResolvedValue(true) } as any;
+    const tokenService = { issueToken: jest.fn() } as any;
+    const tokenRegistry = { register: jest.fn() } as any;
+    const uc = new LoginUseCase(userRepo, passwordHasher, tokenService, tokenRegistry, correlationIdService, configService);
+
+    await expect(uc.execute({ email: 'x@y.com', password: 'p' })).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
   });
 });
 

@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   HttpCode,
+  Patch,
   Post,
   Req,
   Query,
@@ -31,6 +32,17 @@ import { VerifyPhoneOtpUseCase } from '../../application/use-cases/verify-phone-
 import { CheckEmailAvailableUseCase } from '../../application/use-cases/check-email-available.use-case';
 import { CheckPhoneAvailableUseCase } from '../../application/use-cases/check-phone-available.use-case';
 import { LoginUseCase } from '../../application/use-cases/login.use-case';
+import { UpdateRegistrationLocationUseCase } from '../../application/use-cases/update-registration-location.use-case';
+import { UpdateRegistrationWorkerProfileUseCase } from '../../application/use-cases/update-registration-worker-profile.use-case';
+import { UpdateRegistrationClientProfileUseCase } from '../../application/use-cases/update-registration-client-profile.use-case';
+import { UpdateRegistrationPersonalInfoUseCase } from '../../application/use-cases/update-registration-personal-info.use-case';
+import { CompleteRegistrationUseCase } from '../../application/use-cases/complete-registration.use-case';
+import {
+  UpdateClientProfileRequestDto,
+  UpdateLocationRequestDto,
+  UpdatePersonalInfoRequestDto,
+  UpdateWorkerProfileRequestDto,
+} from '../../../user-profile/api/dtos';
 import {
   GetEmailAvailableSwagger,
   GetPhoneAvailableSwagger,
@@ -55,6 +67,11 @@ export class AuthController {
     private readonly checkEmailAvailableUseCase: CheckEmailAvailableUseCase,
     private readonly checkPhoneAvailableUseCase: CheckPhoneAvailableUseCase,
     private readonly loginUseCase: LoginUseCase,
+    private readonly updateRegistrationLocationUseCase: UpdateRegistrationLocationUseCase,
+    private readonly updateRegistrationWorkerProfileUseCase: UpdateRegistrationWorkerProfileUseCase,
+    private readonly updateRegistrationClientProfileUseCase: UpdateRegistrationClientProfileUseCase,
+    private readonly updateRegistrationPersonalInfoUseCase: UpdateRegistrationPersonalInfoUseCase,
+    private readonly completeRegistrationUseCase: CompleteRegistrationUseCase,
     correlationIdService: CorrelationIdService,
     private readonly configService: ConfigService,
   ) {
@@ -83,7 +100,6 @@ export class AuthController {
     });
 
     return {
-      userId: result.userId,
       status: result.status,
       emailVerificationRequired: result.emailVerificationRequired,
       phoneVerificationRequired: result.phoneVerificationRequired,
@@ -109,6 +125,60 @@ export class AuthController {
     const flowId = getCookieValue(req.headers.cookie, REG_FLOW_COOKIE);
     if (!flowId) throw new UnauthorizedException();
     await this.verifyPhoneOtpUseCase.execute({ flowId, otpCode: body.otpCode });
+  }
+
+  @Public()
+  @HttpCode(204)
+  @Patch('registration/location')
+  async updateRegistrationLocation(@Req() req: Request, @Body() body: UpdateLocationRequestDto): Promise<void> {
+    const flowId = getCookieValue(req.headers.cookie, REG_FLOW_COOKIE);
+    if (!flowId) throw new UnauthorizedException();
+    await this.updateRegistrationLocationUseCase.execute({ flowId, ...body });
+  }
+
+  @Public()
+  @HttpCode(204)
+  @Patch('registration/worker-profile')
+  async updateRegistrationWorkerProfile(
+    @Req() req: Request,
+    @Body() body: UpdateWorkerProfileRequestDto,
+  ): Promise<void> {
+    const flowId = getCookieValue(req.headers.cookie, REG_FLOW_COOKIE);
+    if (!flowId) throw new UnauthorizedException();
+    await this.updateRegistrationWorkerProfileUseCase.execute({ flowId, ...body });
+  }
+
+  @Public()
+  @HttpCode(204)
+  @Patch('registration/client-profile')
+  async updateRegistrationClientProfile(
+    @Req() req: Request,
+    @Body() body: UpdateClientProfileRequestDto,
+  ): Promise<void> {
+    const flowId = getCookieValue(req.headers.cookie, REG_FLOW_COOKIE);
+    if (!flowId) throw new UnauthorizedException();
+    await this.updateRegistrationClientProfileUseCase.execute({ flowId, ...body });
+  }
+
+  @Public()
+  @HttpCode(204)
+  @Patch('registration/personal-info')
+  async updateRegistrationPersonalInfo(
+    @Req() req: Request,
+    @Body() body: UpdatePersonalInfoRequestDto,
+  ): Promise<void> {
+    const flowId = getCookieValue(req.headers.cookie, REG_FLOW_COOKIE);
+    if (!flowId) throw new UnauthorizedException();
+    await this.updateRegistrationPersonalInfoUseCase.execute({ flowId, ...body });
+  }
+
+  @Public()
+  @HttpCode(204)
+  @Post('registration/complete')
+  async completeRegistration(@Req() req: Request): Promise<void> {
+    const flowId = getCookieValue(req.headers.cookie, REG_FLOW_COOKIE);
+    if (!flowId) throw new UnauthorizedException();
+    await this.completeRegistrationUseCase.execute({ flowId });
   }
 
   @Public()

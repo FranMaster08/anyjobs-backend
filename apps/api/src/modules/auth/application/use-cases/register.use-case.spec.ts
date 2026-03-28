@@ -6,19 +6,18 @@ describe(RegisterUseCase.name, () => {
   const correlationIdService = new CorrelationIdService();
   const configService = { get: () => false } as any;
 
-  it('registers a new pending user and creates a flow', async () => {
+  it('registers a new draft flow without creating a user', async () => {
     const userRepo = {
       findByEmail: jest.fn().mockResolvedValue(null),
       findByPhoneNumber: jest.fn().mockResolvedValue(null),
-      create: jest.fn().mockImplementation(async (u: any) => ({
-        ...u,
-        id: 'user-1',
-        createdAt: '2026-03-01T00:00:00.000Z',
-      })),
     } as any;
 
     const passwordHasher = { hashPassword: jest.fn().mockResolvedValue('hash') } as any;
-    const flowStore = { createFlow: jest.fn().mockResolvedValue({ flowId: 'flow-1' }) } as any;
+    const flowStore = {
+      findActiveFlowByEmail: jest.fn().mockResolvedValue(null),
+      findActiveFlowByPhoneNumber: jest.fn().mockResolvedValue(null),
+      createFlow: jest.fn().mockResolvedValue({ flowId: 'flow-1' }),
+    } as any;
 
     const uc = new RegisterUseCase(userRepo, passwordHasher, flowStore, correlationIdService, configService);
 
@@ -31,22 +30,32 @@ describe(RegisterUseCase.name, () => {
     });
 
     expect(res).toMatchObject({
-      userId: 'user-1',
       status: 'PENDING',
       nextStage: 'VERIFY',
       flowId: 'flow-1',
     });
-    expect(userRepo.create).toHaveBeenCalled();
+    expect(flowStore.createFlow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        fullName: 'Test User',
+        email: 'test@example.com',
+        phoneNumber: '+34000',
+        passwordHash: 'hash',
+        roles: ['WORKER'],
+        status: 'PENDING',
+        nextStage: 'VERIFY',
+        emailVerified: false,
+        phoneVerified: false,
+      }),
+    );
   });
 
   it('throws when email already exists', async () => {
     const userRepo = {
       findByEmail: jest.fn().mockResolvedValue({ id: 'x' }),
       findByPhoneNumber: jest.fn(),
-      create: jest.fn(),
     } as any;
     const passwordHasher = { hashPassword: jest.fn() } as any;
-    const flowStore = { createFlow: jest.fn() } as any;
+    const flowStore = { findActiveFlowByEmail: jest.fn(), createFlow: jest.fn() } as any;
 
     const uc = new RegisterUseCase(userRepo, passwordHasher, flowStore, correlationIdService, configService);
 

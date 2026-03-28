@@ -44,6 +44,7 @@ export class LoginUseCase {
 
     const ok = await this.passwordHasher.verifyPassword(input.password, user.passwordHash);
     if (!ok) throw new UnauthorizedException();
+    if (user.status !== 'ACTIVE') throw new UnauthorizedException();
 
     const token = await this.tokenService.issueToken(user.id);
     this.tokenRegistry.register(token, { userId: user.id, roles: user.roles as unknown as string[] });

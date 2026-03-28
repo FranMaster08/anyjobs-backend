@@ -38,7 +38,7 @@ describe('Auth (e2e)', () => {
     await app.close();
   });
 
-  it('register -> verify-email -> verify-phone -> login (happy path)', async () => {
+  it('register draft -> complete onboarding -> login (happy path)', async () => {
     const registerRes = await request(app.getHttpServer())
       .post('/auth/register')
       .send({
@@ -56,7 +56,6 @@ describe('Auth (e2e)', () => {
       emailVerificationRequired: true,
       phoneVerificationRequired: true,
     });
-    expect(registerRes.body.userId).toBeTruthy();
     expect(registerRes.headers['set-cookie']).toBeTruthy();
 
     const cookies = registerRes.headers['set-cookie'];
@@ -71,6 +70,48 @@ describe('Auth (e2e)', () => {
       .post('/auth/verify-phone')
       .set('Cookie', cookies)
       .send({ otpCode: '123456' })
+      .expect(204);
+
+    await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: 'test@example.com', password: 'secret123' })
+      .expect(401);
+
+    await request(app.getHttpServer())
+      .patch('/auth/registration/location')
+      .set('Cookie', cookies)
+      .send({
+        city: 'Madrid',
+        countryCode: 'ES',
+        area: 'Centro',
+        coverageRadiusKm: 10,
+      })
+      .expect(204);
+
+    await request(app.getHttpServer())
+      .patch('/auth/registration/worker-profile')
+      .set('Cookie', cookies)
+      .send({
+        categories: ['Limpieza'],
+        headline: 'Profesional con experiencia',
+      })
+      .expect(204);
+
+    await request(app.getHttpServer())
+      .patch('/auth/registration/personal-info')
+      .set('Cookie', cookies)
+      .send({
+        documentType: 'DNI',
+        documentNumber: '12345678A',
+        birthDate: '1990-01-01',
+        nationality: 'ES',
+      })
+      .expect(204);
+
+    await request(app.getHttpServer())
+      .post('/auth/registration/complete')
+      .set('Cookie', cookies)
+      .send({})
       .expect(204);
 
     const loginRes = await request(app.getHttpServer())
@@ -114,6 +155,26 @@ describe('Auth (e2e)', () => {
     const res = await request(app.getHttpServer())
       .get('/auth/email-available')
       .query({ email: 'used@example.com' })
+      .expect(200);
+
+    expect(res.body).toEqual({ available: false });
+  });
+
+  it('phone-available returns available=false after register', async () => {
+    await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({
+        fullName: 'Other Phone',
+        email: 'used-phone@example.com',
+        phoneNumber: '+34600111444',
+        password: 'secret123',
+        roles: ['CLIENT'],
+      })
+      .expect(200);
+
+    const res = await request(app.getHttpServer())
+      .get('/auth/phone-available')
+      .query({ phoneNumber: '+34600111444' })
       .expect(200);
 
     expect(res.body).toEqual({ available: false });

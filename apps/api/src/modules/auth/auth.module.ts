@@ -6,6 +6,11 @@ import { VerifyPhoneOtpUseCase } from './application/use-cases/verify-phone-otp.
 import { CheckEmailAvailableUseCase } from './application/use-cases/check-email-available.use-case';
 import { CheckPhoneAvailableUseCase } from './application/use-cases/check-phone-available.use-case';
 import { LoginUseCase } from './application/use-cases/login.use-case';
+import { UpdateRegistrationLocationUseCase } from './application/use-cases/update-registration-location.use-case';
+import { UpdateRegistrationWorkerProfileUseCase } from './application/use-cases/update-registration-worker-profile.use-case';
+import { UpdateRegistrationClientProfileUseCase } from './application/use-cases/update-registration-client-profile.use-case';
+import { UpdateRegistrationPersonalInfoUseCase } from './application/use-cases/update-registration-personal-info.use-case';
+import { CompleteRegistrationUseCase } from './application/use-cases/complete-registration.use-case';
 import {
   AUTH_PASSWORD_HASHER,
   AUTH_REGISTRATION_FLOW_STORE,
@@ -32,6 +37,11 @@ import { TypeOrmRegistrationFlowStore } from './infrastructure/adapters/typeorm-
     CheckEmailAvailableUseCase,
     CheckPhoneAvailableUseCase,
     LoginUseCase,
+    UpdateRegistrationLocationUseCase,
+    UpdateRegistrationWorkerProfileUseCase,
+    UpdateRegistrationClientProfileUseCase,
+    UpdateRegistrationPersonalInfoUseCase,
+    CompleteRegistrationUseCase,
     { provide: AUTH_USER_REPOSITORY, useClass: TypeOrmAuthUserRepository },
     { provide: AUTH_PASSWORD_HASHER, useClass: ScryptPasswordHasher },
     { provide: AUTH_TOKEN_SERVICE, useClass: UuidTokenService },
