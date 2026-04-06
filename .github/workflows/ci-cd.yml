@@ -105,6 +105,9 @@ jobs:
     if: needs.build-and-push.outputs.deploy_ref != 'skip'
     runs-on: ubuntu-latest
     environment: ${{ needs.build-and-push.outputs.deploy_ref }}
+    env:
+      VPS_DEPLOY_SCRIPT: ${{ secrets.VPS_DEPLOY_SCRIPT }}
+      ANYJOBS_DEPLOY_ROOT: ${{ secrets.ANYJOBS_DEPLOY_ROOT }}
     steps:
       - uses: appleboy/ssh-action@v1.0.3
         with:
@@ -113,9 +116,19 @@ jobs:
           key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
           # Si VPS_SSH_PORT no está definido, usar 22 (evita cadena vacía que rompe el action).
           port: ${{ secrets.VPS_SSH_PORT != '' && secrets.VPS_SSH_PORT || '22' }}
+          envs: VPS_DEPLOY_SCRIPT,ANYJOBS_DEPLOY_ROOT
           script_stop: true
           script: |
-            /usr/local/sbin/anyjobs-deploy \
+            set -euo pipefail
+            if [ -n "${VPS_DEPLOY_SCRIPT:-}" ]; then
+              DEPLOY_BIN="$VPS_DEPLOY_SCRIPT"
+            else
+              DEPLOY_BIN="${HOME}/entorno/anyjobs-deploy"
+            fi
+            if [ -z "${ANYJOBS_DEPLOY_ROOT:-}" ]; then
+              export ANYJOBS_DEPLOY_ROOT="${HOME}/entorno"
+            fi
+            bash "$DEPLOY_BIN" \
               --env ${{ needs.build-and-push.outputs.deploy_ref }} \
               --service anyjobs-back \
               --image "${{ needs.build-and-push.outputs.full_image }}"
