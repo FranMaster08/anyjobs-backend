@@ -115,7 +115,7 @@ jobs:
           port: ${{ secrets.VPS_SSH_PORT != '' && secrets.VPS_SSH_PORT || '22' }}
           script_stop: true
           script: |
-            anyjobs-deploy \
+            /usr/local/sbin/anyjobs-deploy \
               --env ${{ needs.build-and-push.outputs.deploy_ref }} \
               --service anyjobs-back \
               --image "${{ needs.build-and-push.outputs.full_image }}"
