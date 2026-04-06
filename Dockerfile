@@ -19,7 +19,8 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm npm ci --omit=dev --omit=optional
 
-FROM gcr.io/distroless/nodejs18-debian12:nonroot AS runtime
+# Imagen de producción (CI/CD: docker build --target prod)
+FROM gcr.io/distroless/nodejs18-debian12:nonroot AS prod
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=deps-prod /app/node_modules ./node_modules
