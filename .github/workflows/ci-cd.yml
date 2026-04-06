@@ -107,6 +107,7 @@ jobs:
     environment: ${{ needs.build-and-push.outputs.deploy_ref }}
     env:
       VPS_DEPLOY_SCRIPT: ${{ secrets.VPS_DEPLOY_SCRIPT }}
+      # Si vacío: $HOME/entorno-staging | $HOME/entorno-production. Un solo stack: secret con misma ruta en ambos environments
       ANYJOBS_DEPLOY_ROOT: ${{ secrets.ANYJOBS_DEPLOY_ROOT }}
     steps:
       - uses: appleboy/ssh-action@v1.0.3
@@ -126,7 +127,7 @@ jobs:
               DEPLOY_BIN="${HOME}/entorno/anyjobs-deploy"
             fi
             if [ -z "${ANYJOBS_DEPLOY_ROOT:-}" ]; then
-              export ANYJOBS_DEPLOY_ROOT="${HOME}/entorno"
+              export ANYJOBS_DEPLOY_ROOT="${HOME}/entorno-${{ needs.build-and-push.outputs.deploy_ref }}"
             fi
             bash "$DEPLOY_BIN" \
               --env ${{ needs.build-and-push.outputs.deploy_ref }} \
