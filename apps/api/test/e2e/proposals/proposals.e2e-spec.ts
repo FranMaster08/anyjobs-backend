@@ -43,22 +43,64 @@ describe('Proposals (e2e)', () => {
   });
 
   it('GET /proposals with auth but without permission returns 403', async () => {
-    await request(app.getHttpServer()).get('/proposals').set('authorization', 'Bearer test-token').expect(403);
+    await request(app.getHttpServer())
+      .get('/proposals')
+      .set('authorization', 'Bearer test-token')
+      .set('x-user-id', '00000000-0000-0000-0000-000000001001')
+      .set('x-permissions', 'proposals.create')
+      .expect(403);
   });
 
   it('POST /proposals with permission returns 201', async () => {
+    const unique = Date.now();
+    const email = `proposer-${unique}@example.com`;
+    const phoneNumber = `+34601${String(unique).slice(-8)}`;
+
     const registerRes = await request(app.getHttpServer())
       .post('/auth/register')
       .send({
         fullName: 'Proposer',
-        email: 'proposer@example.com',
-        phoneNumber: '+34600999111',
+        email,
+        phoneNumber,
         password: 'secret123',
-        roles: ['WORKER'],
+        roles: ['CLIENT'],
       })
       .expect(200);
 
-    const userId = registerRes.body.userId;
+    const cookies = registerRes.headers['set-cookie'];
+    expect(cookies).toBeTruthy();
+
+    await request(app.getHttpServer())
+      .post('/auth/verify-email')
+      .set('Cookie', cookies)
+      .send({ otpCode: '123456' })
+      .expect(204);
+
+    await request(app.getHttpServer())
+      .patch('/auth/registration/location')
+      .set('Cookie', cookies)
+      .send({
+        city: 'Madrid',
+        countryCode: 'ES',
+        area: 'Centro',
+        coverageRadiusKm: 10,
+      })
+      .expect(204);
+
+    await request(app.getHttpServer())
+      .post('/auth/registration/complete')
+      .set('Cookie', cookies)
+      .send({})
+      .expect(204);
+
+    const loginRes = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email, password: 'secret123' })
+      .expect(200);
+
+    const token = loginRes.body.token as string;
+    const userId = loginRes.body.user.id as string;
+    expect(userId).toBeTruthy();
 
     const openRequestsRes = await request(app.getHttpServer())
       .get('/open-requests')
@@ -69,7 +111,7 @@ describe('Proposals (e2e)', () => {
 
     const res = await request(app.getHttpServer())
       .post('/proposals')
-      .set('authorization', 'Bearer test-token')
+      .set('authorization', `Bearer ${token}`)
       .set('x-permissions', 'proposals.create')
       .send({
         requestId,
@@ -91,6 +133,7 @@ describe('Proposals (e2e)', () => {
     const res = await request(app.getHttpServer())
       .post('/proposals')
       .set('authorization', 'Bearer test-token')
+      .set('x-user-id', '00000000-0000-0000-0000-000000001001')
       .set('x-permissions', 'proposals.create')
       .send({ requestId: '00000000-0000-0000-0000-000000000101' })
       .expect(400);

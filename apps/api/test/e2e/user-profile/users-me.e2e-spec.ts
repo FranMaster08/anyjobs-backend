@@ -101,4 +101,3 @@ describe('Users /me (e2e)', () => {
       .expect(204);
   });
 });
-
