@@ -73,5 +73,123 @@ describe('Open Requests (e2e)', () => {
       .expect(404);
     expect(res.body).toMatchObject({ status: 404, errorCode: 'OPEN_REQUEST.NOT_FOUND' });
   });
+
+  const demoUserId = '00000000-0000-0000-0000-000000001001';
+  const otherUserId = '33333333-3333-3333-3333-333333333333';
+
+  const validCreateBody = () => ({
+    title: 'E2E solicitud',
+    excerpt: 'Resumen corto.',
+    description: 'Descripción completa para la prueba e2e.',
+    tags: ['Test'],
+    locationLabel: 'Madrid',
+    budgetLabel: '€50',
+    contactPhone: '+34600000000',
+    contactEmail: 'e2e-open-requests@example.com',
+  });
+
+  it('POST /open-requests without auth returns 401', async () => {
+    await request(app.getHttpServer()).post('/open-requests').send(validCreateBody()).expect(401);
+  });
+
+  it('POST /open-requests with wrong permission returns 403', async () => {
+    await request(app.getHttpServer())
+      .post('/open-requests')
+      .set('authorization', 'Bearer test-token')
+      .set('x-user-id', demoUserId)
+      .set('x-permissions', 'proposals.read')
+      .send(validCreateBody())
+      .expect(403);
+  });
+
+  it('POST /open-requests with permission returns 201', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/open-requests')
+      .set('authorization', 'Bearer test-token')
+      .set('x-user-id', demoUserId)
+      .set('x-permissions', 'open-requests.create')
+      .send(validCreateBody())
+      .expect(201);
+
+    expect(res.body.id).toBeTruthy();
+    expect(res.body.title).toBe('E2E solicitud');
+    expect(Array.isArray(res.body.images)).toBe(true);
+  });
+
+  it('PATCH /open-requests/:id as non-owner returns 403', async () => {
+    const postRes = await request(app.getHttpServer())
+      .post('/open-requests')
+      .set('authorization', 'Bearer test-token')
+      .set('x-user-id', demoUserId)
+      .set('x-permissions', 'open-requests.create')
+      .send(validCreateBody())
+      .expect(201);
+
+    const id = postRes.body.id as string;
+
+    await request(app.getHttpServer())
+      .patch(`/open-requests/${id}`)
+      .set('authorization', 'Bearer test-token')
+      .set('x-user-id', otherUserId)
+      .set('x-permissions', 'open-requests.update')
+      .send({ title: 'Robo' })
+      .expect(403);
+  });
+
+  it('PATCH /open-requests/:id as owner returns 200', async () => {
+    const postRes = await request(app.getHttpServer())
+      .post('/open-requests')
+      .set('authorization', 'Bearer test-token')
+      .set('x-user-id', demoUserId)
+      .set('x-permissions', 'open-requests.create')
+      .send(validCreateBody())
+      .expect(201);
+
+    const id = postRes.body.id as string;
+
+    const res = await request(app.getHttpServer())
+      .patch(`/open-requests/${id}`)
+      .set('authorization', 'Bearer test-token')
+      .set('x-user-id', demoUserId)
+      .set('x-permissions', 'open-requests.update')
+      .send({ title: 'Título actualizado' })
+      .expect(200);
+
+    expect(res.body.title).toBe('Título actualizado');
+  });
+
+  it('DELETE /open-requests/:id then GET returns 404', async () => {
+    const postRes = await request(app.getHttpServer())
+      .post('/open-requests')
+      .set('authorization', 'Bearer test-token')
+      .set('x-user-id', demoUserId)
+      .set('x-permissions', 'open-requests.create')
+      .send(validCreateBody())
+      .expect(201);
+
+    const id = postRes.body.id as string;
+
+    await request(app.getHttpServer())
+      .delete(`/open-requests/${id}`)
+      .set('authorization', 'Bearer test-token')
+      .set('x-user-id', demoUserId)
+      .set('x-permissions', 'open-requests.delete')
+      .expect(204);
+
+    const getRes = await request(app.getHttpServer()).get(`/open-requests/${id}`).expect(404);
+    expect(getRes.body).toMatchObject({ status: 404, errorCode: 'OPEN_REQUEST.NOT_FOUND' });
+  });
+
+  it('POST /open-requests invalid payload returns 400', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/open-requests')
+      .set('authorization', 'Bearer test-token')
+      .set('x-user-id', demoUserId)
+      .set('x-permissions', 'open-requests.create')
+      .send({ title: '' })
+      .expect(400);
+
+    expect(res.body).toMatchObject({ status: 400, errorCode: 'VALIDATION.INVALID_INPUT' });
+  });
 });
 

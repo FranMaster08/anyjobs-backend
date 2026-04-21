@@ -161,12 +161,14 @@ describe('Auth (e2e)', () => {
   });
 
   it('phone-available returns available=false after register', async () => {
+    const unique = Date.now();
+    const phoneNumber = `+34601${String(unique).slice(-8)}`;
     await request(app.getHttpServer())
       .post('/auth/register')
       .send({
         fullName: 'Other Phone',
-        email: 'used-phone@example.com',
-        phoneNumber: '+34600111444',
+        email: `used-phone-${unique}@example.com`,
+        phoneNumber,
         password: 'secret123',
         roles: ['CLIENT'],
       })
@@ -174,7 +176,7 @@ describe('Auth (e2e)', () => {
 
     const res = await request(app.getHttpServer())
       .get('/auth/phone-available')
-      .query({ phoneNumber: '+34600111444' })
+      .query({ phoneNumber })
       .expect(200);
 
     expect(res.body).toEqual({ available: false });

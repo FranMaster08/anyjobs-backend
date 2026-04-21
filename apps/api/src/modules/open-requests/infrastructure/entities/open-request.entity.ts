@@ -1,4 +1,7 @@
-import { Column, Entity, Index, PrimaryColumn } from 'typeorm';
+import { Column, DeleteDateColumn, Entity, Index, PrimaryColumn } from 'typeorm';
+
+const OPEN_REQUEST_DELETED_AT_TYPE =
+  (process.env.DB_TYPE ?? '').toLowerCase() === 'postgres' ? 'timestamp' : 'datetime';
 
 @Entity({ name: 'open_requests' })
 export class OpenRequestEntity {
@@ -56,5 +59,11 @@ export class OpenRequestEntity {
 
   @Column({ type: 'simple-json' })
   images!: { url: string; alt: string }[];
+
+  @Column({ name: 'owner_user_id', type: 'uuid', nullable: true })
+  ownerUserId!: string | null;
+
+  @DeleteDateColumn({ name: 'deleted_at', type: OPEN_REQUEST_DELETED_AT_TYPE as any, nullable: true })
+  deletedAt?: Date | null;
 }
 
