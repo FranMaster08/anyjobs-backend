@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { OpenRequestsController } from './api/controllers/open-requests.controller';
 import { ListOpenRequestsUseCase } from './application/use-cases/list-open-requests.use-case';
+import { ListMyOpenRequestsUseCase } from './application/use-cases/list-my-open-requests.use-case';
 import { GetOpenRequestDetailUseCase } from './application/use-cases/get-open-request-detail.use-case';
 import { CreateOpenRequestUseCase } from './application/use-cases/create-open-request.use-case';
 import { UpdateOpenRequestUseCase } from './application/use-cases/update-open-request.use-case';
@@ -15,6 +16,7 @@ import { TypeOrmOpenRequestsRepository } from './infrastructure/adapters/typeorm
   controllers: [OpenRequestsController],
   providers: [
     ListOpenRequestsUseCase,
+    ListMyOpenRequestsUseCase,
     GetOpenRequestDetailUseCase,
     CreateOpenRequestUseCase,
     UpdateOpenRequestUseCase,

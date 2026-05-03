@@ -30,6 +30,7 @@ export type UpdateOpenRequestRecordPatch = Partial<
 
 export interface OpenRequestsRepositoryPort {
   list(pageRequest: PageRequest): Promise<PageResult<OpenRequestListItem>>;
+  listByOwner(ownerUserId: string, pageRequest: PageRequest): Promise<PageResult<OpenRequestListItem>>;
   getById(id: string): Promise<OpenRequestDetail | null>;
   create(input: CreateOpenRequestRecordInput): Promise<OpenRequestDetail>;
   updatePartial(id: string, patch: UpdateOpenRequestRecordPatch): Promise<OpenRequestDetail | null>;

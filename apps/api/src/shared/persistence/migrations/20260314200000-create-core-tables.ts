@@ -1,5 +1,8 @@
 import { MigrationInterface, QueryRunner, Table, TableForeignKey, TableIndex } from 'typeorm';
 
+const DELETED_AT_COLUMN_TYPE =
+  (process.env.DB_TYPE ?? '').toLowerCase() === 'postgres' ? 'timestamp' : 'datetime';
+
 export class CreateCoreTables20260314200000 implements MigrationInterface {
   name = 'CreateCoreTables20260314200000';
 
@@ -153,6 +156,8 @@ export class CreateCoreTables20260314200000 implements MigrationInterface {
           { name: 'contact_phone', type: 'varchar', length: '32' },
           { name: 'contact_email', type: 'varchar', length: '320' },
           { name: 'images', type: 'text' },
+          { name: 'owner_user_id', type: 'uuid', isNullable: true },
+          { name: 'deleted_at', type: DELETED_AT_COLUMN_TYPE, isNullable: true },
         ],
       }),
       true,

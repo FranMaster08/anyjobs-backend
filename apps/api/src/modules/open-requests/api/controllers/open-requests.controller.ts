@@ -15,6 +15,7 @@ import type { Request } from 'express';
 import { Public } from '../../../../shared/security/public.decorator';
 import { RequirePermissions } from '../../../../shared/security/require-permissions.decorator';
 import { ListOpenRequestsUseCase } from '../../application/use-cases/list-open-requests.use-case';
+import { ListMyOpenRequestsUseCase } from '../../application/use-cases/list-my-open-requests.use-case';
 import { GetOpenRequestDetailUseCase } from '../../application/use-cases/get-open-request-detail.use-case';
 import { CreateOpenRequestUseCase } from '../../application/use-cases/create-open-request.use-case';
 import { UpdateOpenRequestUseCase } from '../../application/use-cases/update-open-request.use-case';
@@ -27,6 +28,7 @@ import {
 } from '../dtos';
 import {
   DeleteOpenRequestSwagger,
+  GetMyOpenRequestsListSwagger,
   GetOpenRequestDetailSwagger,
   GetOpenRequestsListSwagger,
   PatchOpenRequestSwagger,
@@ -42,6 +44,7 @@ type AuthedRequest = Request & { user: AuthedUser };
 export class OpenRequestsController {
   constructor(
     private readonly listUseCase: ListOpenRequestsUseCase,
+    private readonly listMineUseCase: ListMyOpenRequestsUseCase,
     private readonly detailUseCase: GetOpenRequestDetailUseCase,
     private readonly createUseCase: CreateOpenRequestUseCase,
     private readonly updateUseCase: UpdateOpenRequestUseCase,
@@ -74,6 +77,22 @@ export class OpenRequestsController {
       ...body,
     });
     return created as unknown as OpenRequestDetailDto;
+  }
+
+  @RequirePermissions('open-requests.read.own')
+  @GetMyOpenRequestsListSwagger()
+  @Get('mine')
+  async listMine(
+    @Req() req: AuthedRequest,
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
+  ): Promise<OpenRequestsListResponseDto> {
+    const res = await this.listMineUseCase.execute({
+      ownerUserId: req.user.userId,
+      page: page ? Number(page) : undefined,
+      pageSize: pageSize ? Number(pageSize) : undefined,
+    });
+    return res as unknown as OpenRequestsListResponseDto;
   }
 
   @Public()

@@ -1,5 +1,8 @@
 import { MigrationInterface, QueryRunner, TableColumn, TableForeignKey } from 'typeorm';
 
+const DELETED_AT_COLUMN_TYPE =
+  (process.env.DB_TYPE ?? '').toLowerCase() === 'postgres' ? 'timestamp' : 'datetime';
+
 export class OpenRequestsOwnerSoftDelete20260413120000 implements MigrationInterface {
   name = 'OpenRequestsOwnerSoftDelete20260413120000';
 
@@ -18,7 +21,7 @@ export class OpenRequestsOwnerSoftDelete20260413120000 implements MigrationInter
     if (!table?.findColumnByName('deleted_at')) {
       await queryRunner.addColumn(
         'open_requests',
-        new TableColumn({ name: 'deleted_at', type: 'timestamp', isNullable: true }),
+        new TableColumn({ name: 'deleted_at', type: DELETED_AT_COLUMN_TYPE, isNullable: true }),
       );
     }
 

@@ -1,6 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
+import { DataSource } from 'typeorm';
 import { AppModule } from '../../../src/app.module';
 import { applyTestAppDefaults } from '../test-app';
 
@@ -23,6 +24,37 @@ function setTestEnv() {
 describe('Open Requests (e2e)', () => {
   let app: INestApplication;
 
+  const TEST_USER_IDS = [
+    '00000000-0000-0000-0000-000000001001',
+    '33333333-3333-3333-3333-333333333333',
+    '00000000-0000-0000-0000-0000000010aa',
+    '00000000-0000-0000-0000-0000000010bb',
+    '00000000-0000-0000-0000-0000000010cc',
+  ];
+
+  async function seedTestUsers(dataSource: DataSource): Promise<void> {
+    for (let i = 0; i < TEST_USER_IDS.length; i++) {
+      const id = TEST_USER_IDS[i];
+      await dataSource.query(
+        `INSERT INTO users (
+            id, full_name, email, phone_number, password_hash, roles, status,
+            email_verified, phone_verified
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          id,
+          `Test User ${i + 1}`,
+          `e2e-user-${i + 1}@example.com`,
+          `+34600${String(i + 1).padStart(6, '0')}`,
+          'hash',
+          'CLIENT',
+          'ACTIVE',
+          1,
+          1,
+        ],
+      );
+    }
+  }
+
   beforeAll(async () => {
     setTestEnv();
     const moduleRef = await Test.createTestingModule({
@@ -32,6 +64,9 @@ describe('Open Requests (e2e)', () => {
     app = moduleRef.createNestApplication();
     applyTestAppDefaults(app);
     await app.init();
+
+    const dataSource = app.get(DataSource);
+    await seedTestUsers(dataSource);
   });
 
   afterAll(async () => {
@@ -190,6 +225,99 @@ describe('Open Requests (e2e)', () => {
       .expect(400);
 
     expect(res.body).toMatchObject({ status: 400, errorCode: 'VALIDATION.INVALID_INPUT' });
+  });
+
+  it('GET /open-requests/mine without auth returns 401', async () => {
+    await request(app.getHttpServer()).get('/open-requests/mine').expect(401);
+  });
+
+  it('GET /open-requests/mine returns only own requests, ignores ownerUserId override and respects soft-delete', async () => {
+    const ownerId = '00000000-0000-0000-0000-0000000010aa';
+    const intruderId = '00000000-0000-0000-0000-0000000010bb';
+
+    const owned1 = await request(app.getHttpServer())
+      .post('/open-requests')
+      .set('authorization', 'Bearer test-token')
+      .set('x-user-id', ownerId)
+      .set('x-permissions', 'open-requests.create')
+      .send({ ...validCreateBody(), title: 'Mía 1', contactEmail: 'mine1@example.com' })
+      .expect(201);
+
+    const owned2 = await request(app.getHttpServer())
+      .post('/open-requests')
+      .set('authorization', 'Bearer test-token')
+      .set('x-user-id', ownerId)
+      .set('x-permissions', 'open-requests.create')
+      .send({ ...validCreateBody(), title: 'Mía 2', contactEmail: 'mine2@example.com' })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .post('/open-requests')
+      .set('authorization', 'Bearer test-token')
+      .set('x-user-id', intruderId)
+      .set('x-permissions', 'open-requests.create')
+      .send({ ...validCreateBody(), title: 'Ajena', contactEmail: 'other@example.com' })
+      .expect(201);
+
+    const mineRes = await request(app.getHttpServer())
+      .get('/open-requests/mine')
+      .set('authorization', 'Bearer test-token')
+      .set('x-user-id', ownerId)
+      .set('x-permissions', 'open-requests.read.own')
+      .query({ page: 1, pageSize: 50 })
+      .expect(200);
+
+    expect(Array.isArray(mineRes.body.items)).toBe(true);
+    const titlesMine = (mineRes.body.items as Array<{ id: string }>).map((x) => x.id);
+    expect(titlesMine).toContain(owned1.body.id);
+    expect(titlesMine).toContain(owned2.body.id);
+    const allOwnedIds = new Set([owned1.body.id, owned2.body.id]);
+    expect(titlesMine.every((id) => allOwnedIds.has(id))).toBe(true);
+
+    const overrideRes = await request(app.getHttpServer())
+      .get('/open-requests/mine')
+      .set('authorization', 'Bearer test-token')
+      .set('x-user-id', ownerId)
+      .set('x-permissions', 'open-requests.read.own')
+      .query({ ownerUserId: intruderId, page: 1, pageSize: 50 })
+      .expect(200);
+
+    const idsAfterOverride = (overrideRes.body.items as Array<{ id: string }>).map((x) => x.id);
+    expect(idsAfterOverride.every((id) => allOwnedIds.has(id))).toBe(true);
+
+    await request(app.getHttpServer())
+      .delete(`/open-requests/${owned1.body.id}`)
+      .set('authorization', 'Bearer test-token')
+      .set('x-user-id', ownerId)
+      .set('x-permissions', 'open-requests.delete')
+      .expect(204);
+
+    const afterDeleteRes = await request(app.getHttpServer())
+      .get('/open-requests/mine')
+      .set('authorization', 'Bearer test-token')
+      .set('x-user-id', ownerId)
+      .set('x-permissions', 'open-requests.read.own')
+      .query({ page: 1, pageSize: 50 })
+      .expect(200);
+
+    const idsAfterDelete = (afterDeleteRes.body.items as Array<{ id: string }>).map((x) => x.id);
+    expect(idsAfterDelete).not.toContain(owned1.body.id);
+    expect(idsAfterDelete).toContain(owned2.body.id);
+  });
+
+  it('GET /open-requests/mine returns empty list for user without requests', async () => {
+    const lonelyUser = '00000000-0000-0000-0000-0000000010cc';
+    const res = await request(app.getHttpServer())
+      .get('/open-requests/mine')
+      .set('authorization', 'Bearer test-token')
+      .set('x-user-id', lonelyUser)
+      .set('x-permissions', 'open-requests.read.own')
+      .expect(200);
+
+    expect(Array.isArray(res.body.items)).toBe(true);
+    expect(res.body.items.length).toBe(0);
+    expect(res.body.meta?.totalItems).toBe(0);
+    expect(res.body.hasMore).toBe(false);
   });
 });
 

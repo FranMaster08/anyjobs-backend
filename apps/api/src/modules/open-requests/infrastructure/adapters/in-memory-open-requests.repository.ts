@@ -83,6 +83,29 @@ export class InMemoryOpenRequestsRepository implements OpenRequestsRepositoryPor
     return { items, meta };
   }
 
+  async listByOwner(
+    ownerUserId: string,
+    pageRequest: PageRequest,
+  ): Promise<PageResult<OpenRequestListItem>> {
+    const ownedIds = new Set<string>();
+    for (const [id, owner] of this.owners.entries()) {
+      if (owner === ownerUserId) ownedIds.add(id);
+    }
+
+    const sorted = [...this.listItems]
+      .filter((x) => !this.deleted.has(x.id) && ownedIds.has(x.id))
+      .sort((a, b) => b.publishedAtSort - a.publishedAtSort || a.id.localeCompare(b.id));
+
+    const totalItems = sorted.length;
+    const meta = buildPageMeta(totalItems, pageRequest.page, pageRequest.pageSize);
+
+    const start = (meta.page - 1) * meta.pageSize;
+    const end = start + meta.pageSize;
+    const items = sorted.slice(start, end);
+
+    return { items, meta };
+  }
+
   async getById(id: string): Promise<OpenRequestDetail | null> {
     if (this.deleted.has(id)) return null;
     const d = this.detailsById.get(id);

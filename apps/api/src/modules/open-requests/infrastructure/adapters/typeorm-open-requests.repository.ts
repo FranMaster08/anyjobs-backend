@@ -89,6 +89,23 @@ export class TypeOrmOpenRequestsRepository implements OpenRequestsRepositoryPort
     return { items: items.map(toListItem), meta };
   }
 
+  async listByOwner(
+    ownerUserId: string,
+    pageRequest: PageRequest,
+  ): Promise<PageResult<OpenRequestListItem>> {
+    const totalItems = await this.repo.count({ where: { ownerUserId } });
+    const meta = buildPageMeta(totalItems, pageRequest.page, pageRequest.pageSize);
+
+    const items = await this.repo.find({
+      where: { ownerUserId },
+      order: { publishedAtSort: 'DESC' as any, id: 'ASC' as any },
+      skip: (meta.page - 1) * meta.pageSize,
+      take: meta.pageSize,
+    });
+
+    return { items: items.map(toListItem), meta };
+  }
+
   async getById(id: string): Promise<OpenRequestDetail | null> {
     const e = await this.repo.findOne({ where: { id } });
     return e ? toDetail(e) : null;
