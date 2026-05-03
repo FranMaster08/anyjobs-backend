@@ -780,6 +780,55 @@ Eventos:
 - Publica: ninguno
 - Consume: ninguno
 
+### POST /open-requests
+Propósito:
+- Crear una solicitud abierta; el titular (`owner_user_id`) queda fijado al `userId` autenticado.
+
+Autenticación:
+- Bearer
+- Permiso requerido: `open-requests.create`
+
+Request:
+- Body JSON (`CreateOpenRequestDto`): `title`, `excerpt`, `description`, `tags[]`, `locationLabel`, `budgetLabel`, `contactPhone`, `contactEmail` (obligatorios); opcionales `publishedAtLabel`, `imageUrl`, `imageAlt`, `images[]`, `provider`, `reputation`, `reviewsCount`, `providerReviews[]`.
+
+Response:
+- 201: `OpenRequestDetailDto` (misma forma que `GET /open-requests/:id`)
+
+Errores:
+- 400: validación
+- 401 / 403: auth / RBAC
+
+### PATCH /open-requests/:id
+Propósito:
+- Actualización parcial. Solo el titular del recurso puede modificarlo (mismo `userId` que `owner_user_id`).
+
+Autenticación:
+- Bearer
+- Permiso requerido: `open-requests.update`
+
+Response:
+- 200: `OpenRequestDetailDto`
+
+Errores:
+- 400: validación
+- 403: no titular o sin permiso
+- 404: no existe o baja lógica previa
+
+### DELETE /open-requests/:id
+Propósito:
+- Baja lógica (soft delete). El recurso deja de aparecer en listado y detalle públicos. Solo el titular.
+
+Autenticación:
+- Bearer
+- Permiso requerido: `open-requests.delete`
+
+Response:
+- 204: sin cuerpo
+
+Errores:
+- 403: no titular o sin permiso
+- 404: no existe o ya eliminado
+
 ### GET /proposals
 Propósito:
 - Lista propuestas (filtrables) para usuario/solicitud.

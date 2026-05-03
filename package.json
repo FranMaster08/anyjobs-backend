@@ -11,7 +11,7 @@
     "migration:run": "typeorm-ts-node-commonjs migration:run -d apps/api/src/shared/persistence/typeorm.datasource.ts",
     "migration:revert": "typeorm-ts-node-commonjs migration:revert -d apps/api/src/shared/persistence/typeorm.datasource.ts",
     "migration:generate": "typeorm-ts-node-commonjs migration:generate -d apps/api/src/shared/persistence/typeorm.datasource.ts",
-    "seed": "ts-node apps/api/src/shared/persistence/seed/seed.ts"
+    "seed": "ts-node -r dotenv/config apps/api/src/shared/persistence/seed/seed.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.20",

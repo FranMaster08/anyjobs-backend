@@ -77,3 +77,61 @@ Si no existe el recurso solicitado, el sistema MUST responder `404` con `{ "mess
 - **WHEN** el cliente llama `GET /open-requests/{id}` con un id inexistente
 - **THEN** el sistema responde `404` con `{ "message": "<texto>" }`
 
+## ADDED Requirements (CRUD autenticado)
+
+### Requirement: Create open request (authenticated)
+
+El sistema MUST exponer `POST /open-requests` protegido por autenticación Bearer y MUST validar el cuerpo JSON según el contrato de campos mutables (título, descripción, etiquetas, ubicación, presupuesto, contacto, imágenes opcionales).
+
+El sistema MUST responder `201` con JSON compatible con el detalle (`OpenRequestDetailDto`).
+
+#### Scenario: Authenticated client creates an open request
+
+- **WHEN** un cliente autenticado con permiso `open-requests.create` envía `POST /open-requests` con un body válido
+- **THEN** el sistema responde `201` y el body incluye el `id` del recurso creado
+
+#### Scenario: Unauthenticated create is rejected
+
+- **WHEN** un cliente sin token válido llama `POST /open-requests`
+- **THEN** el sistema responde `401`
+
+### Requirement: Update open request by id (authenticated)
+
+El sistema MUST exponer `PATCH /open-requests/{id}` protegido por autenticación Bearer y MUST aplicar actualización parcial solo en campos enviados.
+
+El titular MUST ser el mismo `userId` persistido en `owner_user_id`. Si `owner_user_id` es nulo (datos legados), el sistema MUST rechazar la mutación con `403`.
+
+El sistema MUST responder `200` con el detalle actualizado.
+
+#### Scenario: Owner updates their open request
+
+- **WHEN** el titular autorizado envía `PATCH /open-requests/{id}` con cambios válidos
+- **THEN** el sistema responde `200` y la persistencia refleja los cambios
+
+#### Scenario: Non-owner cannot update
+
+- **WHEN** un usuario autenticado con permiso pero distinto titular envía `PATCH /open-requests/{id}`
+- **THEN** el sistema responde `403`
+
+### Requirement: Delete open request by id (authenticated, soft delete)
+
+El sistema MUST exponer `DELETE /open-requests/{id}` protegido por autenticación Bearer y MUST realizar baja lógica (`deleted_at`), excluyendo el recurso de listados y detalle públicos.
+
+El titular MUST coincidir con `owner_user_id` (misma regla que en actualización).
+
+El sistema MUST responder `204` sin cuerpo.
+
+#### Scenario: Owner deletes their open request
+
+- **WHEN** el titular autorizado llama `DELETE /open-requests/{id}` para un recurso existente y no eliminado
+- **THEN** el sistema responde `204` y las lecturas públicas posteriores responden `404`
+
+### Requirement: Validation for write operations
+
+Para errores de validación en escritura, el sistema MUST responder `400` con el contrato de error global del API (p. ej. `errorCode` `VALIDATION.INVALID_INPUT`).
+
+#### Scenario: Invalid create payload returns 400
+
+- **WHEN** el cliente envía `POST /open-requests` con datos inválidos
+- **THEN** el sistema responde `400` con el contrato de error de validación
+

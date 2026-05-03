@@ -59,6 +59,8 @@ describe('Health (e2e)', () => {
     const res = await request(app.getHttpServer())
       .get('/health/secure')
       .set('authorization', 'Bearer test-token')
+      .set('x-user-id', '00000000-0000-0000-0000-000000001001')
+      .set('x-permissions', 'proposals.read')
       .expect(403);
     expect(res.body).toMatchObject({
       status: 403,
@@ -70,6 +72,7 @@ describe('Health (e2e)', () => {
     const res = await request(app.getHttpServer())
       .get('/health/secure')
       .set('authorization', 'Bearer test-token')
+      .set('x-user-id', '00000000-0000-0000-0000-000000001001')
       .set('x-permissions', 'health.read')
       .expect(200);
     expect(res.body).toEqual({ status: 'ok' });
@@ -79,6 +82,7 @@ describe('Health (e2e)', () => {
     const res = await request(app.getHttpServer())
       .get('/health/deny')
       .set('authorization', 'Bearer test-token')
+      .set('x-user-id', '00000000-0000-0000-0000-000000001001')
       .expect(403);
     expect(res.body).toMatchObject({
       status: 403,

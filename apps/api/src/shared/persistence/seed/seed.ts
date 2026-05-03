@@ -54,20 +54,66 @@ async function main(): Promise<void> {
       ],
     );
 
+    // Usuario demo (opcional) para pruebas manuales — antes de open_requests para poder referenciar owner_user_id.
+    // NOTA: passwordHash usa el mismo algoritmo que el login (scrypt).
+    const demoPassword =
+      config.app.nodeEnv === 'production' ? undefined : (config.seed.demoPassword ?? 'Demo1234!');
+    if (!demoPassword) {
+      throw new Error('SEED_DEMO_PASSWORD is required to seed the demo user in production');
+    }
+    const passwordHasher = new ScryptPasswordHasher();
+    const demoPasswordHash = await passwordHasher.hashPassword(demoPassword);
+    const demoUserId = '00000000-0000-0000-0000-000000001001';
+    await dataSource.query(
+      `
+      INSERT INTO users (
+        id, full_name, email, phone_number, password_hash, roles, status,
+        email_verified, phone_verified, country_code, city, area
+      )
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+      ON CONFLICT (email) DO UPDATE SET
+        id = EXCLUDED.id,
+        full_name = EXCLUDED.full_name,
+        phone_number = EXCLUDED.phone_number,
+        password_hash = EXCLUDED.password_hash,
+        roles = EXCLUDED.roles,
+        status = EXCLUDED.status,
+        email_verified = EXCLUDED.email_verified,
+        phone_verified = EXCLUDED.phone_verified,
+        country_code = EXCLUDED.country_code,
+        city = EXCLUDED.city,
+        area = EXCLUDED.area
+    `,
+      [
+        demoUserId,
+        'Usuario Demo',
+        'demo@anyjobs.test',
+        '+34911111111',
+        demoPasswordHash,
+        'CLIENT',
+        'ACTIVE',
+        true,
+        true,
+        'ES',
+        'Madrid',
+        'Centro',
+      ],
+    );
+
     const now = Date.now();
 
-    // Open requests (ids fijos) + 1 extra para pruebas
+    // Open requests (ids fijos) + 1 extra para pruebas (titular: usuario demo)
     await dataSource.query(
       `
       INSERT INTO open_requests (
         id, title, excerpt, description, tags, location_label, published_at_label, published_at_sort,
         budget_label, image_url, image_alt, provider, reputation, reviews_count, provider_reviews,
-        contact_phone, contact_email, images
+        contact_phone, contact_email, images, owner_user_id
       )
       VALUES
-        ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18),
-        ($19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36),
-        ($37,$38,$39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,$51,$52,$53,$54)
+        ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19),
+        ($20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38),
+        ($39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,$51,$52,$53,$54,$55,$56,$57)
       ON CONFLICT (id) DO NOTHING
     `,
       [
@@ -89,6 +135,7 @@ async function main(): Promise<void> {
         '+34600111222',
         'contacto@example.com',
         json([]),
+        demoUserId,
 
         '00000000-0000-0000-0000-000000000102',
         'Montaje de mueble',
@@ -108,6 +155,7 @@ async function main(): Promise<void> {
         '+34600111333',
         'soporte@example.com',
         json([{ url: 'https://picsum.photos/seed/req-2/800/600', alt: 'Foto del mueble' }]),
+        demoUserId,
 
         '00000000-0000-0000-0000-000000000103',
         'Pintura de habitación',
@@ -127,6 +175,7 @@ async function main(): Promise<void> {
         '+34600111444',
         'hola@pintores.example',
         json([]),
+        demoUserId,
       ],
     );
 
@@ -136,9 +185,9 @@ async function main(): Promise<void> {
       INSERT INTO open_requests (
         id, title, excerpt, description, tags, location_label, published_at_label, published_at_sort,
         budget_label, image_url, image_alt, provider, reputation, reviews_count, provider_reviews,
-        contact_phone, contact_email, images
+        contact_phone, contact_email, images, owner_user_id
       )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
       ON CONFLICT (id) DO UPDATE SET
         title = EXCLUDED.title,
         excerpt = EXCLUDED.excerpt,
@@ -156,7 +205,8 @@ async function main(): Promise<void> {
         provider_reviews = EXCLUDED.provider_reviews,
         contact_phone = EXCLUDED.contact_phone,
         contact_email = EXCLUDED.contact_email,
-        images = EXCLUDED.images
+        images = EXCLUDED.images,
+        owner_user_id = EXCLUDED.owner_user_id
     `,
       [
         '00000000-0000-0000-0000-000000000104',
@@ -187,51 +237,7 @@ async function main(): Promise<void> {
           { url: 'https://picsum.photos/seed/req-104-4/1280/720', alt: 'Foto 4' },
           { url: 'https://picsum.photos/seed/req-104-5/1280/720', alt: 'Foto 5' },
         ]),
-      ],
-    );
-
-    // Usuario demo (opcional) para pruebas manuales.
-    // NOTA: passwordHash usa el mismo algoritmo que el login (scrypt).
-    const demoPassword =
-      config.app.nodeEnv === 'production' ? undefined : (config.seed.demoPassword ?? 'Demo1234!');
-    if (!demoPassword) {
-      throw new Error('SEED_DEMO_PASSWORD is required to seed the demo user in production');
-    }
-    const passwordHasher = new ScryptPasswordHasher();
-    const demoPasswordHash = await passwordHasher.hashPassword(demoPassword);
-    await dataSource.query(
-      `
-      INSERT INTO users (
-        id, full_name, email, phone_number, password_hash, roles, status,
-        email_verified, phone_verified, country_code, city, area
-      )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
-      ON CONFLICT (email) DO UPDATE SET
-        id = EXCLUDED.id,
-        full_name = EXCLUDED.full_name,
-        phone_number = EXCLUDED.phone_number,
-        password_hash = EXCLUDED.password_hash,
-        roles = EXCLUDED.roles,
-        status = EXCLUDED.status,
-        email_verified = EXCLUDED.email_verified,
-        phone_verified = EXCLUDED.phone_verified,
-        country_code = EXCLUDED.country_code,
-        city = EXCLUDED.city,
-        area = EXCLUDED.area
-    `,
-      [
-        '00000000-0000-0000-0000-000000001001',
-        'Usuario Demo',
-        'demo@anyjobs.test',
-        '+34911111111',
-        demoPasswordHash,
-        'CLIENT',
-        'ACTIVE',
-        true,
-        true,
-        'ES',
-        'Madrid',
-        'Centro',
+        demoUserId,
       ],
     );
   } finally {
