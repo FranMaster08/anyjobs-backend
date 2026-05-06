@@ -1,4 +1,5 @@
-import { Column, DeleteDateColumn, Entity, Index, PrimaryColumn } from 'typeorm';
+import { Column, DeleteDateColumn, Entity, Index, OneToMany, PrimaryColumn } from 'typeorm';
+import { OpenRequestImageEntity } from './open-request-image.entity';
 
 const OPEN_REQUEST_DELETED_AT_TYPE =
   (process.env.DB_TYPE ?? '').toLowerCase() === 'postgres' ? 'timestamp' : 'datetime';
@@ -65,5 +66,8 @@ export class OpenRequestEntity {
 
   @DeleteDateColumn({ name: 'deleted_at', type: OPEN_REQUEST_DELETED_AT_TYPE as any, nullable: true })
   deletedAt?: Date | null;
+
+  @OneToMany(() => OpenRequestImageEntity, (image) => image.openRequest)
+  imageRecords?: OpenRequestImageEntity[];
 }
 

@@ -25,3 +25,21 @@ La configuración MUST vivir en `apps/api/src/config/` con archivos separados pa
 - **WHEN** un desarrollador configura el proyecto en un ambiente nuevo
 - **THEN** puede derivar todas las variables requeridas a partir de `.env.example` y el schema de validación
 
+### Requirement: URL pública base opcional para assets (`APP_PUBLIC_URL`)
+
+El sistema MUST exponer una variable de entorno opcional `APP_PUBLIC_URL` (URL absoluta sin barra final, p. ej. `https://api.ejemplo.com`) usada para convertir rutas relativas de recursos servidos por la API (p. ej. imágenes de open requests) en URLs absolutas persistidas y devueltas al cliente.
+
+Si `APP_PUBLIC_URL` no está definida o está vacía tras trim, el valor efectivo MUST derivarse como `http://localhost:<APP_PORT>` donde `<APP_PORT>` es la variable de entorno ya validada del servidor HTTP.
+
+Si `APP_PUBLIC_URL` está definida con un valor no vacío, MUST validarse como URL absoluta válida antes de iniciar.
+
+#### Scenario: Producción con dominio público
+
+- **WHEN** el operador define `APP_PUBLIC_URL=https://api.midominio.com` y `APP_PORT` coherente con el despliegue
+- **THEN** la aplicación arranca y usa esa base para resolver rutas relativas de assets hacia URLs absolutas
+
+#### Scenario: Desarrollo local sin variable explícita
+
+- **WHEN** `APP_PUBLIC_URL` no está definida y `APP_PORT=3000`
+- **THEN** la URL pública base efectiva es `http://localhost:3000` para resolver assets relativos
+

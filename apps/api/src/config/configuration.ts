@@ -4,6 +4,8 @@ export interface AppConfiguration {
   app: {
     nodeEnv: 'development' | 'test' | 'production';
     port: number;
+    /** Base URL pública (sin barra final), p. ej. https://api.midominio.com — usada para resolver URLs relativas de assets. */
+    publicUrl: string;
   };
   seed: {
     demoPassword?: string;
@@ -74,6 +76,7 @@ export const configuration = (): AppConfiguration => {
     app: {
       nodeEnv: env.NODE_ENV,
       port: env.APP_PORT,
+      publicUrl: env.APP_PUBLIC_URL?.trim() || `http://localhost:${env.APP_PORT}`,
     },
     seed: {
       demoPassword: env.SEED_DEMO_PASSWORD,

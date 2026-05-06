@@ -1,7 +1,9 @@
 import { applyDecorators } from '@nestjs/common';
 import {
+  ApiBody,
   ApiBearerAuth,
   ApiBadRequestResponse,
+  ApiConsumes,
   ApiForbiddenResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -20,6 +22,36 @@ export function PatchOpenRequestSwagger() {
       summary: 'Actualizar open request (parcial)',
       description:
         'Actualización parcial. Requiere permiso `open-requests.update` y ser titular (`owner_user_id`) del recurso.',
+    }),
+    ApiConsumes('multipart/form-data'),
+    ApiBody({
+      schema: {
+        type: 'object',
+        properties: {
+          title: { type: 'string' },
+          excerpt: { type: 'string' },
+          description: { type: 'string' },
+          tags: { type: 'array', items: { type: 'string' } },
+          locationLabel: { type: 'string' },
+          budgetLabel: { type: 'string' },
+          contactPhone: { type: 'string' },
+          contactEmail: { type: 'string' },
+          images: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                url: { type: 'string' },
+                alt: { type: 'string' },
+              },
+            },
+          },
+          files: {
+            type: 'array',
+            items: { type: 'string', format: 'binary' },
+          },
+        },
+      },
     }),
     ApiOkResponse({ type: OpenRequestDetailDto }),
     ApiBadRequestResponse({ type: ErrorResponseDto }),

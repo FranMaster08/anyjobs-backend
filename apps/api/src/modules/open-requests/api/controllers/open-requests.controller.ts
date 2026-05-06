@@ -9,9 +9,13 @@ import {
   Post,
   Query,
   Req,
+  UploadedFiles,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
+import { memoryStorage } from 'multer';
 import { Public } from '../../../../shared/security/public.decorator';
 import { RequirePermissions } from '../../../../shared/security/require-permissions.decorator';
 import { ListOpenRequestsUseCase } from '../../application/use-cases/list-open-requests.use-case';
@@ -38,6 +42,8 @@ import { patchDtoToRecord } from '../mappers/patch-open-request.mapper';
 
 type AuthedUser = { userId: string };
 type AuthedRequest = Request & { user: AuthedUser };
+type UploadedFile = { buffer: Buffer; mimetype: string; originalname: string };
+const uploadInterceptorOptions = { storage: memoryStorage() };
 
 @ApiTags('Open Requests')
 @Controller('open-requests')
@@ -71,10 +77,20 @@ export class OpenRequestsController {
   @PostOpenRequestSwagger()
   @HttpCode(201)
   @Post()
-  async create(@Req() req: AuthedRequest, @Body() body: CreateOpenRequestDto): Promise<OpenRequestDetailDto> {
+  @UseInterceptors(FilesInterceptor('files', 6, uploadInterceptorOptions))
+  async create(
+    @Req() req: AuthedRequest,
+    @Body() body: CreateOpenRequestDto,
+    @UploadedFiles() files: UploadedFile[] = [],
+  ): Promise<OpenRequestDetailDto> {
     const created = await this.createUseCase.execute({
       ownerUserId: req.user.userId,
       ...body,
+      uploadedImages: files.map((file) => ({
+        bytes: file.buffer,
+        mimeType: file.mimetype,
+        originalName: file.originalname,
+      })),
     });
     return created as unknown as OpenRequestDetailDto;
   }
@@ -106,15 +122,22 @@ export class OpenRequestsController {
   @RequirePermissions('open-requests.update')
   @PatchOpenRequestSwagger()
   @Patch(':id')
+  @UseInterceptors(FilesInterceptor('files', 6, uploadInterceptorOptions))
   async patch(
     @Req() req: AuthedRequest,
     @Param('id') id: string,
     @Body() body: PatchOpenRequestDto,
+    @UploadedFiles() files: UploadedFile[] = [],
   ): Promise<OpenRequestDetailDto> {
     const updated = await this.updateUseCase.execute({
       id,
       userId: req.user.userId,
       patch: patchDtoToRecord(body),
+      uploadedImages: files.map((file) => ({
+        bytes: file.buffer,
+        mimeType: file.mimetype,
+        originalName: file.originalname,
+      })),
     });
     return updated as unknown as OpenRequestDetailDto;
   }

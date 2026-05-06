@@ -121,6 +121,7 @@ describe('Open Requests (e2e)', () => {
     budgetLabel: '€50',
     contactPhone: '+34600000000',
     contactEmail: 'e2e-open-requests@example.com',
+    images: [{ url: 'https://picsum.photos/seed/e2e-open-request/640/360', alt: 'Imagen e2e' }],
   });
 
   it('POST /open-requests without auth returns 401', async () => {
