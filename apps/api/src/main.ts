@@ -3,6 +3,8 @@ import './shared/polyfills/webcrypto';
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { ValidationPipe } from '@nestjs/common';
+import { join } from 'node:path';
+import * as express from 'express';
 import { AppModule } from './app.module';
 import { nestLoggerLevels } from './shared/logging/app-logger';
 import { setupSwagger } from './shared/swagger/setup-swagger';
@@ -24,6 +26,7 @@ async function bootstrap() {
   );
 
   setupSwagger(app, config);
+  app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
 
   await app.listen(port);
 }

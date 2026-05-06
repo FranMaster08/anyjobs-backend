@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { randomUUID } from 'node:crypto';
 import { Repository } from 'typeorm';
 import { buildPageMeta } from '../../../../shared/application/pagination/page-result';
 import type { PageRequest } from '../../../../shared/application/pagination/page-request';
@@ -11,6 +12,7 @@ import type {
   UpdateOpenRequestRecordPatch,
 } from '../../application/ports/open-requests-repository.port';
 import { OpenRequestEntity } from '../entities/open-request.entity';
+import { OpenRequestImageEntity } from '../entities/open-request-image.entity';
 
 function parseJsonIfString<T>(value: unknown, fallback: T): T {
   if (typeof value === 'string') {
@@ -38,20 +40,36 @@ function toListItem(e: OpenRequestEntity): OpenRequestListItem {
 }
 
 function toDetail(e: OpenRequestEntity): OpenRequestDetail {
-  const parsedImages = parseJsonIfString<unknown>(e.images as any, []);
-  const imagesArray = Array.isArray(parsedImages) ? (parsedImages as Array<{ url?: unknown; alt?: unknown }>) : [];
   const fallbackAlt = (e.imageAlt ?? '').trim() || 'Imagen de la solicitud';
+  const relatedImages =
+    (e.imageRecords ?? [])
+      .map((img) => {
+        const url = (img.url ?? '').trim();
+        if (!url) return null;
+        const alt = (img.alt ?? '').trim();
+        return { url, alt: alt || fallbackAlt };
+      })
+      .filter((x): x is { url: string; alt: string } => x !== null) ?? [];
 
-  const normalizedImages = imagesArray
+  const parsedImages = parseJsonIfString<unknown>(e.images as any, []);
+  const legacyImages = (Array.isArray(parsedImages) ? parsedImages : [])
     .map((img) => {
-      const url = typeof img?.url === 'string' ? img.url.trim() : '';
+      const raw = img as { url?: unknown; alt?: unknown };
+      const url = typeof raw?.url === 'string' ? raw.url.trim() : '';
       if (!url) return null;
-      const alt = typeof img?.alt === 'string' ? img.alt.trim() : '';
+      const alt = typeof raw?.alt === 'string' ? raw.alt.trim() : '';
       return { url, alt: alt || fallbackAlt };
     })
     .filter((x): x is { url: string; alt: string } => x !== null);
 
-  const images = normalizedImages.length > 0 ? normalizedImages : e.imageUrl ? [{ url: e.imageUrl, alt: fallbackAlt }] : [];
+  const images =
+    relatedImages.length > 0
+      ? relatedImages
+      : legacyImages.length > 0
+        ? legacyImages
+        : e.imageUrl
+          ? [{ url: e.imageUrl, alt: fallbackAlt }]
+          : [];
 
   return {
     id: e.id,
@@ -74,7 +92,10 @@ function toDetail(e: OpenRequestEntity): OpenRequestDetail {
 
 @Injectable()
 export class TypeOrmOpenRequestsRepository implements OpenRequestsRepositoryPort {
-  constructor(@InjectRepository(OpenRequestEntity) private readonly repo: Repository<OpenRequestEntity>) {}
+  constructor(
+    @InjectRepository(OpenRequestEntity) private readonly repo: Repository<OpenRequestEntity>,
+    @InjectRepository(OpenRequestImageEntity) private readonly imageRepo: Repository<OpenRequestImageEntity>,
+  ) {}
 
   async list(pageRequest: PageRequest): Promise<PageResult<OpenRequestListItem>> {
     const totalItems = await this.repo.count();
@@ -107,7 +128,7 @@ export class TypeOrmOpenRequestsRepository implements OpenRequestsRepositoryPort
   }
 
   async getById(id: string): Promise<OpenRequestDetail | null> {
-    const e = await this.repo.findOne({ where: { id } });
+    const e = await this.repo.findOne({ where: { id }, relations: { imageRecords: true } });
     return e ? toDetail(e) : null;
   }
 
@@ -134,7 +155,8 @@ export class TypeOrmOpenRequestsRepository implements OpenRequestsRepositoryPort
       images: input.images,
     });
     const saved = await this.repo.save(entity);
-    return toDetail(saved);
+    const refreshed = await this.repo.findOne({ where: { id: saved.id }, relations: { imageRecords: true } });
+    return toDetail(refreshed ?? saved);
   }
 
   async updatePartial(id: string, patch: UpdateOpenRequestRecordPatch): Promise<OpenRequestDetail | null> {
@@ -158,8 +180,43 @@ export class TypeOrmOpenRequestsRepository implements OpenRequestsRepositoryPort
     if (patch.contactEmail !== undefined) e.contactEmail = patch.contactEmail;
     if (patch.images !== undefined) e.images = patch.images;
     await this.repo.save(e);
-    const refreshed = await this.repo.findOne({ where: { id } });
+    const refreshed = await this.repo.findOne({ where: { id }, relations: { imageRecords: true } });
     return refreshed ? toDetail(refreshed) : null;
+  }
+
+  async listImageRecords(
+    id: string,
+  ): Promise<Array<{ ownerUserId: string; url: string; alt: string; storageKey: string | null }>> {
+    const rows = await this.imageRepo.find({
+      where: { openRequestId: id },
+      order: { createdAt: 'ASC' as any, id: 'ASC' as any },
+    });
+    return rows.map((row) => ({
+      ownerUserId: row.ownerUserId,
+      url: row.url,
+      alt: row.alt,
+      storageKey: row.storageKey,
+    }));
+  }
+
+  async replaceImages(
+    id: string,
+    ownerUserId: string,
+    images: { url: string; alt: string; storageKey?: string | null }[],
+  ): Promise<void> {
+    await this.imageRepo.delete({ openRequestId: id });
+    if (images.length === 0) return;
+    const rows = images.map((img) =>
+      this.imageRepo.create({
+        id: randomUUID(),
+        openRequestId: id,
+        ownerUserId,
+        storageKey: img.storageKey ?? null,
+        url: img.url,
+        alt: img.alt,
+      }),
+    );
+    await this.imageRepo.save(rows);
   }
 
   async softDelete(id: string): Promise<boolean> {

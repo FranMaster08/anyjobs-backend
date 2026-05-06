@@ -135,3 +135,21 @@ Para errores de validación en escritura, el sistema MUST responder `400` con el
 - **WHEN** el cliente envía `POST /open-requests` con datos inválidos
 - **THEN** el sistema responde `400` con el contrato de error de validación
 
+### Requirement: Persisted image URLs are absolute public URLs
+
+Al persistir una open request (`POST` crear y `PATCH` cuando aplique la galería o la miniatura derivada del primer recurso visual), los valores guardados como `imageUrl` y cada `images[].url` MUST ser **URLs absolutas** visibles desde el cliente (esquema `http` o `https`).
+
+Las rutas relativas producidas por el almacenamiento local u orígenes internos MUST resolverse anteponiendo la **URL pública base** configurada en la aplicación (variable `APP_PUBLIC_URL`; si no se define, el default MUST ser `http://localhost:<APP_PORT>` sin barra final). La concatenación MUST normalizar barras (base sin `/` final; path relativo que no empiece por `/` MUST recibir `/` antes de unir).
+
+Las URLs que el cliente u origen ya entreguen como absolutas (`http://...` o `https://...`) MUST persistirse **sin modificación**.
+
+#### Scenario: Subida local se persiste como URL absoluta
+
+- **WHEN** el backend guarda una imagen vía provider local y obtiene una ruta tipo `/uploads/...`
+- **THEN** los campos `imageUrl` y `images[].url` almacenados y devueltos en lecturas posteriores usan `<URL pública base>` + la ruta (p. ej. `http://localhost:3000/uploads/...` en local con defaults)
+
+#### Scenario: Imagen externa ya absoluta no se reescribe
+
+- **WHEN** el cuerpo incluye `images` con `url` absoluta `https://...`
+- **THEN** el valor persistido permanece idéntico a la URL absoluta recibida
+

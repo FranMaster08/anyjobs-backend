@@ -67,6 +67,10 @@ export class InMemoryOpenRequestsRepository implements OpenRequestsRepositoryPor
   }));
 
   private readonly owners = new Map<string, string | null>(seedItems.map((x) => [x.id, null]));
+  private readonly imageRecordsByRequestId = new Map<
+    string,
+    Array<{ ownerUserId: string; url: string; alt: string; storageKey: string | null }>
+  >();
   private readonly deleted = new Set<string>();
 
   async list(pageRequest: PageRequest): Promise<PageResult<OpenRequestListItem>> {
@@ -132,6 +136,15 @@ export class InMemoryOpenRequestsRepository implements OpenRequestsRepositoryPor
     };
     this.detailsById.set(input.id, detail);
     this.owners.set(input.id, input.ownerUserId);
+    this.imageRecordsByRequestId.set(
+      input.id,
+      input.images.map((img) => ({
+        ownerUserId: input.ownerUserId,
+        url: img.url,
+        alt: img.alt,
+        storageKey: null,
+      })),
+    );
     this.listItems.push({
       id: input.id,
       imageUrl: input.imageUrl,
@@ -184,6 +197,33 @@ export class InMemoryOpenRequestsRepository implements OpenRequestsRepositoryPor
     }
 
     return { ...next };
+  }
+
+  async replaceImages(
+    id: string,
+    _ownerUserId: string,
+    images: { url: string; alt: string; storageKey?: string | null }[],
+  ): Promise<void> {
+    if (this.deleted.has(id)) return;
+    const cur = this.detailsById.get(id);
+    if (!cur) return;
+    cur.images = images.map((img) => ({ url: img.url, alt: img.alt }));
+    this.imageRecordsByRequestId.set(
+      id,
+      images.map((img) => ({
+        ownerUserId: _ownerUserId,
+        url: img.url,
+        alt: img.alt,
+        storageKey: img.storageKey ?? null,
+      })),
+    );
+    this.detailsById.set(id, { ...cur, images: cur.images.map((img) => ({ ...img })) });
+  }
+
+  async listImageRecords(
+    id: string,
+  ): Promise<Array<{ ownerUserId: string; url: string; alt: string; storageKey: string | null }>> {
+    return (this.imageRecordsByRequestId.get(id) ?? []).map((row) => ({ ...row }));
   }
 
   async softDelete(id: string): Promise<boolean> {

@@ -9,10 +9,13 @@ import { DeleteOpenRequestUseCase } from './application/use-cases/delete-open-re
 import { OPEN_REQUESTS_REPOSITORY } from './application/ports/tokens';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { OpenRequestEntity } from './infrastructure/entities/open-request.entity';
+import { OpenRequestImageEntity } from './infrastructure/entities/open-request-image.entity';
 import { TypeOrmOpenRequestsRepository } from './infrastructure/adapters/typeorm-open-requests.repository';
+import { IMAGE_STORAGE_PROVIDER } from './application/ports/tokens';
+import { LocalImageStorageProvider } from './infrastructure/adapters/local-image-storage.provider';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([OpenRequestEntity])],
+  imports: [TypeOrmModule.forFeature([OpenRequestEntity, OpenRequestImageEntity])],
   controllers: [OpenRequestsController],
   providers: [
     ListOpenRequestsUseCase,
@@ -22,6 +25,7 @@ import { TypeOrmOpenRequestsRepository } from './infrastructure/adapters/typeorm
     UpdateOpenRequestUseCase,
     DeleteOpenRequestUseCase,
     { provide: OPEN_REQUESTS_REPOSITORY, useClass: TypeOrmOpenRequestsRepository },
+    { provide: IMAGE_STORAGE_PROVIDER, useClass: LocalImageStorageProvider },
   ],
 })
 export class OpenRequestsModule {}

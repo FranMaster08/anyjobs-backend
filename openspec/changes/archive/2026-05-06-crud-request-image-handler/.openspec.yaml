@@ -1,0 +1,54 @@
+schema: spec-driven
+created: 2026-05-06
+
+Contexto actual:
+Actualmente, al crear una propuesta, el sistema solicita una URL donde ya exista la imagen. Esto limita el flujo porque el usuario no puede cargar directamente imágenes desde la aplicación.
+
+Problema a resolver:
+El sistema debe permitir que un usuario cargue una o más imágenes directamente desde la aplicación, con un máximo de 6 imágenes por propuesta. Debe ser obligatorio registrar al menos 1 imagen.
+
+Regla de propiedad:
+Cada imagen cargada debe quedar asociada al usuario autenticado que la subió. La imagen no debe existir como un recurso suelto o anónimo.
+
+Esto no significa que la imagen solo pueda ser vista por su dueño. Otros usuarios podrán visualizar la imagen cuando el flujo funcional lo permita, por ejemplo al consultar una propuesta publicada o disponible para revisión.
+
+Sin embargo, el sistema debe poder determinar internamente quién es el propietario de cada imagen. Es decir, cada imagen debe conservar una relación clara con el usuario que la cargó.
+
+Reglas esperadas:
+- Una imagen pertenece a un usuario propietario.
+- Una imagen puede estar asociada a una propuesta.
+- Una propuesta debe tener mínimo 1 imagen y máximo 6 imágenes.
+- Otros usuarios pueden visualizar imágenes si tienen permiso para ver la propuesta asociada.
+- Otros usuarios no deben poder modificar, reemplazar, eliminar ni reutilizar imágenes que no les pertenecen.
+- El backend debe validar propiedad y permisos antes de permitir operaciones de actualización o eliminación.
+- Los endpoints GET deben devolver la URL necesaria para visualizar cada imagen.
+- El sistema debe evitar manejar imágenes como URLs externas sin control de propiedad.
+
+Almacenamiento:
+Actualmente no existe bucket ni servicio cloud definido. La solución inicial puede almacenar las imágenes en el servidor.
+
+Sin embargo, la arquitectura debe quedar preparada para migrar en el futuro a un proveedor cloud como S3, Azure Blob Storage, Google Cloud Storage o similar.
+
+Recomendación técnica:
+Usar una abstracción o patrón Strategy para el almacenamiento de archivos, de forma que el proveedor pueda cambiar sin afectar la lógica de negocio.
+
+El backend no debe depender directamente del almacenamiento local. Debe existir una interfaz o contrato, por ejemplo:
+
+- ImageStorageProvider
+- FileStorageStrategy
+- StorageAdapter
+
+Impacto esperado:
+Este cambio impacta:
+
+- creación de propuestas
+- edición de propuestas
+- consulta de propuestas
+- modelo de persistencia de imágenes
+- validaciones de propiedad
+- validaciones de cantidad mínima y máxima
+- generación de URLs
+- documentación Swagger/OpenAPI
+
+Objetivo:
+Construir un flujo donde las imágenes sean cargadas desde la aplicación, queden asociadas a un usuario propietario y a una propuesta, puedan ser visualizadas por usuarios autorizados, y puedan migrarse en el futuro a almacenamiento cloud sin romper la lógica funcional ni los contratos públicos del sistema.

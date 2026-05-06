@@ -34,6 +34,14 @@ export interface OpenRequestsRepositoryPort {
   getById(id: string): Promise<OpenRequestDetail | null>;
   create(input: CreateOpenRequestRecordInput): Promise<OpenRequestDetail>;
   updatePartial(id: string, patch: UpdateOpenRequestRecordPatch): Promise<OpenRequestDetail | null>;
+  listImageRecords(
+    id: string,
+  ): Promise<Array<{ ownerUserId: string; url: string; alt: string; storageKey: string | null }>>;
+  replaceImages(
+    id: string,
+    ownerUserId: string,
+    images: { url: string; alt: string; storageKey?: string | null }[],
+  ): Promise<void>;
   softDelete(id: string): Promise<boolean>;
   findOwnerId(id: string): Promise<{ ownerUserId: string | null } | null>;
 }
