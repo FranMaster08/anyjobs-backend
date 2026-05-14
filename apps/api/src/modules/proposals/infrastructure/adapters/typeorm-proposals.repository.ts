@@ -49,6 +49,11 @@ export class TypeOrmProposalsRepository implements ProposalsRepositoryPort {
     return { items: items.map(toDomain), meta };
   }
 
+  async existsForRequestAndUser(requestId: string, userId: string): Promise<boolean> {
+    const count = await this.repo.count({ where: { requestId, userId } });
+    return count > 0;
+  }
+
   async create(input: NewProposal): Promise<Proposal> {
     const entity = this.repo.create({
       requestId: input.requestId,

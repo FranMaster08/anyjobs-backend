@@ -7,11 +7,6 @@ export class CreateProposalRequestDto {
   @IsNotEmpty()
   requestId!: string;
 
-  @ApiProperty({ example: 'user-1' })
-  @IsString()
-  @IsNotEmpty()
-  userId!: string;
-
   @ApiProperty({ example: 'María' })
   @IsString()
   @IsNotEmpty()

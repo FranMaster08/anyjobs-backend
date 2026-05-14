@@ -37,3 +37,6 @@ logs/
 
 # Jest
 junit.xml
+
+# Local uploads (dev)
+uploads/

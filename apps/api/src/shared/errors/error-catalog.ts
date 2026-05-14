@@ -66,6 +66,27 @@ export const ErrorCatalog = {
     defaultTechnicalMessage: 'Insufficient permissions.',
     severity: 'warn',
   },
+  'PROPOSAL.CANNOT_APPLY_TO_OWN_REQUEST': {
+    errorCode: 'PROPOSAL.CANNOT_APPLY_TO_OWN_REQUEST',
+    httpStatus: 400,
+    defaultClientMessage: 'No puedes postularte a tu propia request.',
+    defaultTechnicalMessage: 'Authenticated user is the owner of the target open request.',
+    severity: 'warn',
+  },
+  'PROPOSAL.ALREADY_EXISTS': {
+    errorCode: 'PROPOSAL.ALREADY_EXISTS',
+    httpStatus: 409,
+    defaultClientMessage: 'Ya enviaste una propuesta para esta solicitud.',
+    defaultTechnicalMessage: 'Duplicate proposal for the same open request and user.',
+    severity: 'warn',
+  },
+  'PROPOSAL.VIEW_APPLICANTS_FORBIDDEN': {
+    errorCode: 'PROPOSAL.VIEW_APPLICANTS_FORBIDDEN',
+    httpStatus: 403,
+    defaultClientMessage: 'No puedes ver las postulaciones de esta solicitud.',
+    defaultTechnicalMessage: 'Only the open request owner may list proposals by requestId.',
+    severity: 'warn',
+  },
 } as const satisfies Record<string, ErrorCatalogEntry>;
 
 export type KnownErrorCode = keyof typeof ErrorCatalog;

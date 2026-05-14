@@ -10,5 +10,6 @@ export interface ListProposalsFilters {
 export interface ProposalsRepositoryPort {
   list(filters: ListProposalsFilters, pageRequest: PageRequest): Promise<PageResult<Proposal>>;
   create(input: NewProposal): Promise<Proposal>;
+  existsForRequestAndUser(requestId: string, userId: string): Promise<boolean>;
 }
 

@@ -30,6 +30,8 @@ export interface OpenRequestListItem {
 
 export interface OpenRequestDetail {
   id: string;
+  /** Creador de la solicitud (UUID). Expuesto para reglas de UI (p. ej. postulación / listado de postulantes). */
+  ownerUserId: string | null;
   title: string;
   excerpt: string;
   description: string;

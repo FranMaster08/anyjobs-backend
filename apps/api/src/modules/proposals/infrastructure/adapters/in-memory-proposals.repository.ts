@@ -41,5 +41,9 @@ export class InMemoryProposalsRepository implements ProposalsRepositoryPort {
     this.proposals.push(proposal);
     return proposal;
   }
+
+  async existsForRequestAndUser(requestId: string, userId: string): Promise<boolean> {
+    return this.proposals.some((p) => p.requestId === requestId && p.userId === userId);
+  }
 }
 

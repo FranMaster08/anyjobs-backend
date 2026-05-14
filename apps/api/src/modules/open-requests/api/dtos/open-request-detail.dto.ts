@@ -7,6 +7,13 @@ export class OpenRequestDetailDto {
   @ApiProperty({ example: 'req-1' })
   id!: string;
 
+  @ApiProperty({
+    example: '00000000-0000-0000-0000-000000001001',
+    nullable: true,
+    description: 'Usuario creador de la solicitud (puede ser null en datos legacy).',
+  })
+  ownerUserId!: string | null;
+
   @ApiProperty({ example: 'Limpieza profunda de piso' })
   title!: string;
 

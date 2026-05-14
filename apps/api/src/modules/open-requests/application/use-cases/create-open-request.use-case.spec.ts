@@ -30,6 +30,7 @@ function buildDetail(): OpenRequestDetail {
     contactPhone: '+34000000000',
     contactEmail: 'test@example.com',
     images: [{ url: '/uploads/open-request-images/a.jpg', alt: 'a.jpg' }],
+    ownerUserId: 'owner-1',
   };
 }
 

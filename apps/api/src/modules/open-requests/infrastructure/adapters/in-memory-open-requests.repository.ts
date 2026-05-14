@@ -12,6 +12,7 @@ import type {
 const seedItems: OpenRequestDetail[] = [
   {
     id: 'req-1',
+    ownerUserId: '00000000-0000-0000-0000-000000001099',
     title: 'Limpieza profunda de piso',
     excerpt: 'Necesito una limpieza profunda.',
     description: 'Busco una persona para una limpieza profunda de un piso de 70m2.',
@@ -31,6 +32,7 @@ const seedItems: OpenRequestDetail[] = [
   },
   {
     id: 'req-2',
+    ownerUserId: '00000000-0000-0000-0000-000000001099',
     title: 'Montaje de mueble',
     excerpt: 'Necesito montar un armario.',
     description: 'Montaje de un armario IKEA, se requiere experiencia.',
@@ -66,7 +68,7 @@ export class InMemoryOpenRequestsRepository implements OpenRequestsRepositoryPor
     publishedAtSort: Date.now() - idx * 1000 * 60 * 60 * 24,
   }));
 
-  private readonly owners = new Map<string, string | null>(seedItems.map((x) => [x.id, null]));
+  private readonly owners = new Map<string, string | null>(seedItems.map((x) => [x.id, x.ownerUserId]));
   private readonly imageRecordsByRequestId = new Map<
     string,
     Array<{ ownerUserId: string; url: string; alt: string; storageKey: string | null }>
@@ -119,6 +121,7 @@ export class InMemoryOpenRequestsRepository implements OpenRequestsRepositoryPor
   async create(input: CreateOpenRequestRecordInput): Promise<OpenRequestDetail> {
     const detail: OpenRequestDetail = {
       id: input.id,
+      ownerUserId: input.ownerUserId,
       title: input.title,
       excerpt: input.excerpt,
       description: input.description,

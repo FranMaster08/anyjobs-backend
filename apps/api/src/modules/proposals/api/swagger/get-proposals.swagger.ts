@@ -17,7 +17,8 @@ export function GetProposalsSwagger() {
     ApiBearerAuth('bearer'),
     ApiOperation({
       summary: 'Listar proposals (paginado)',
-      description: 'Lista proposals con filtros opcionales y paginación estándar (items+meta).',
+      description:
+        'Lista proposals con filtros opcionales y paginación estándar (items+meta). Si se usa `requestId`, solo el creador de esa solicitud puede obtener el listado.',
     }),
     ApiOkResponse({ type: ProposalsListResponseDto }),
     ApiBadRequestResponse({ type: ErrorResponseDto }),

@@ -27,6 +27,7 @@ import { LocalImageStorageProvider } from './infrastructure/adapters/local-image
     { provide: OPEN_REQUESTS_REPOSITORY, useClass: TypeOrmOpenRequestsRepository },
     { provide: IMAGE_STORAGE_PROVIDER, useClass: LocalImageStorageProvider },
   ],
+  exports: [OPEN_REQUESTS_REPOSITORY],
 })
 export class OpenRequestsModule {}
 

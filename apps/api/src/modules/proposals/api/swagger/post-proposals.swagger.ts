@@ -17,7 +17,8 @@ export function PostProposalsSwagger() {
     ApiBearerAuth('bearer'),
     ApiOperation({
       summary: 'Crear proposal',
-      description: 'Crea una propuesta en estado SENT.',
+      description:
+        'Crea una propuesta en estado SENT. El usuario postulante se toma de la sesión autenticada (no se envía en el cuerpo).',
     }),
     ApiCreatedResponse({ type: ProposalDto }),
     ApiBadRequestResponse({ type: ErrorResponseDto }),

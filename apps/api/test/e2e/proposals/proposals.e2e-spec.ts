@@ -115,7 +115,6 @@ describe('Proposals (e2e)', () => {
       .set('x-permissions', 'proposals.create')
       .send({
         requestId,
-        userId,
         authorName: 'María',
         authorSubtitle: 'Profesional',
         whoAmI: 'Soy profesional.',
@@ -127,6 +126,21 @@ describe('Proposals (e2e)', () => {
     expect(res.body).toMatchObject({ requestId, userId, status: 'SENT' });
     expect(res.body.id).toBeTruthy();
     expect(res.body.createdAt).toBeTruthy();
+
+    const dup = await request(app.getHttpServer())
+      .post('/proposals')
+      .set('authorization', `Bearer ${token}`)
+      .set('x-permissions', 'proposals.create')
+      .send({
+        requestId,
+        authorName: 'María',
+        authorSubtitle: 'Profesional',
+        whoAmI: 'Soy profesional.',
+        message: 'Intento duplicado.',
+        estimate: '€60',
+      })
+      .expect(409);
+    expect(dup.body.errorCode).toBe('PROPOSAL.ALREADY_EXISTS');
   });
 
   it('POST /proposals invalid payload returns 400', async () => {
@@ -139,6 +153,52 @@ describe('Proposals (e2e)', () => {
       .expect(400);
 
     expect(res.body).toMatchObject({ status: 400, errorCode: 'VALIDATION.INVALID_INPUT' });
+  });
+
+  it('POST /proposals rejects owner self-apply', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/proposals')
+      .set('authorization', 'Bearer test-token')
+      .set('x-user-id', '00000000-0000-0000-0000-000000001001')
+      .set('x-permissions', 'proposals.create')
+      .send({
+        requestId: '00000000-0000-0000-0000-000000000101',
+        authorName: 'Demo',
+        authorSubtitle: 'Cliente',
+        whoAmI: 'Soy el dueño de la solicitud.',
+        message: 'Intento de auto-postulación no permitido.',
+        estimate: '€10',
+      })
+      .expect(400);
+
+    expect(res.body.errorCode).toBe('PROPOSAL.CANNOT_APPLY_TO_OWN_REQUEST');
+  });
+
+  it('GET /proposals?requestId= as owner returns items+meta', async () => {
+    const seededRequest = '00000000-0000-0000-0000-000000000101';
+    const res = await request(app.getHttpServer())
+      .get('/proposals')
+      .query({ requestId: seededRequest, page: 1, pageSize: 20 })
+      .set('authorization', 'Bearer test-token')
+      .set('x-user-id', '00000000-0000-0000-0000-000000001001')
+      .set('x-permissions', 'proposals.read')
+      .expect(200);
+
+    expect(Array.isArray(res.body.items)).toBe(true);
+    expect(res.body.meta).toBeTruthy();
+  });
+
+  it('GET /proposals?requestId= as non-owner returns 403', async () => {
+    const seededRequest = '00000000-0000-0000-0000-000000000101';
+    const res = await request(app.getHttpServer())
+      .get('/proposals')
+      .query({ requestId: seededRequest, page: 1, pageSize: 20 })
+      .set('authorization', 'Bearer test-token')
+      .set('x-user-id', '44444444-4444-4444-4444-444444444444')
+      .set('x-permissions', 'proposals.read')
+      .expect(403);
+
+    expect(res.body.errorCode).toBe('PROPOSAL.VIEW_APPLICANTS_FORBIDDEN');
   });
 });
 

@@ -73,6 +73,7 @@ function toDetail(e: OpenRequestEntity): OpenRequestDetail {
 
   return {
     id: e.id,
+    ownerUserId: e.ownerUserId ?? null,
     title: e.title,
     excerpt: e.excerpt,
     description: e.description,
