@@ -24,7 +24,7 @@ export class UserProfileReadService {
 
   async getPublicProfile(userId: string): Promise<UserPublicProfileResponseDto> {
     const user = await this.users.findOne({ where: { id: userId } });
-    if (!user) throw new NotFoundException();
+    if (!user) throw new NotFoundException('Usuario no encontrado');
 
     const metrics = await this.loadMetrics(userId);
 
@@ -45,7 +45,7 @@ export class UserProfileReadService {
 
   async getPrivateProfile(userId: string): Promise<UserPrivateProfileResponseDto> {
     const user = await this.users.findOne({ where: { id: userId } });
-    if (!user) throw new NotFoundException();
+    if (!user) throw new NotFoundException('Usuario no encontrado');
 
     const metrics = await this.loadMetrics(userId);
 
