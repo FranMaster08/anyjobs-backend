@@ -1,5 +1,5 @@
-import { Body, Controller, HttpCode, Inject, Patch, Req, UnauthorizedException } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, HttpCode, Inject, Patch, Req, UnauthorizedException } from '@nestjs/common';
+import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { RequirePermissions } from '../../../../shared/security/require-permissions.decorator';
 import { Public } from '../../../../shared/security/public.decorator';
@@ -26,6 +26,8 @@ import { UpdateLocationUseCase } from '../../application/use-cases/update-locati
 import { UpdateWorkerProfileUseCase } from '../../application/use-cases/update-worker-profile.use-case';
 import { UpdateClientProfileUseCase } from '../../application/use-cases/update-client-profile.use-case';
 import { UpdatePersonalInfoUseCase } from '../../application/use-cases/update-personal-info.use-case';
+import { UserPrivateProfileResponseDto } from '../dtos';
+import { UserProfileReadService } from '../../application/user-profile-read.service';
 
 type RequestUser = { token: string; userId?: string; roles: string[]; permissions: string[] };
 type RequestWithUser = Request & { user?: RequestUser };
@@ -51,6 +53,7 @@ export class UserProfileController {
     @Inject(AUTH_REGISTRATION_FLOW_STORE) private readonly regFlowStore: RegistrationFlowStorePort,
     private readonly tokenRegistry: AuthTokenRegistry,
     @Inject(USER_PROFILE_USER_REPOSITORY) private readonly userRepo: UserProfileRepositoryPort,
+    private readonly profileRead: UserProfileReadService,
   ) {}
 
   private async resolveUserContext(req: RequestWithUser): Promise<{ userId: string; roles: UserRole[] }> {
@@ -73,6 +76,23 @@ export class UserProfileController {
     if (!user) throw new UnauthorizedException();
 
     return { userId: flow.userId, roles: (user.roles ?? []) as UserRole[] };
+  }
+
+  private resolveBearerSessionUserId(req: RequestWithUser): string {
+    const token = getBearerToken(req);
+    if (!token) throw new UnauthorizedException();
+    const session = this.tokenRegistry.resolve(token);
+    if (!session?.userId) throw new UnauthorizedException();
+    return session.userId;
+  }
+
+  @RequirePermissions('users.profile.read')
+  @Get('profile')
+  @ApiOperation({ summary: 'Perfil completo del usuario autenticado (datos privados de cuenta)' })
+  @ApiOkResponse({ type: UserPrivateProfileResponseDto })
+  async getMyProfile(@Req() req: RequestWithUser): Promise<UserPrivateProfileResponseDto> {
+    const userId = this.resolveBearerSessionUserId(req);
+    return this.profileRead.getPrivateProfile(userId);
   }
 
   @Public()
