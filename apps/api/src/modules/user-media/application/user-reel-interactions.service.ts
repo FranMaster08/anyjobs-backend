@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TrackUserReelInteractionDto } from '../api/dto/track-user-reel-interaction.dto';
+import { UserReelEntity } from '../infrastructure/entities/user-reel.entity';
 import { UserReelInteractionEntity } from '../infrastructure/entities/user-reel-interaction.entity';
 
 const KNOWN_ROOT_KEYS = new Set([
@@ -30,6 +31,8 @@ export class UserReelInteractionsService {
   constructor(
     @InjectRepository(UserReelInteractionEntity)
     private readonly repo: Repository<UserReelInteractionEntity>,
+    @InjectRepository(UserReelEntity)
+    private readonly reels: Repository<UserReelEntity>,
   ) {}
 
   async track(dto: TrackUserReelInteractionDto): Promise<void> {
@@ -47,7 +50,14 @@ export class UserReelInteractionsService {
     if (dto.completionRate !== undefined) extra.completionRate = dto.completionRate;
     if (dto.viewDurationMs !== undefined) extra.viewDurationMs = dto.viewDurationMs;
 
-    const reelId = dto.reelId ?? dto.campaignId ?? null;
+    let reelId = dto.reelId ?? dto.campaignId ?? null;
+    if (reelId) {
+      const reelExists = await this.reels.exist({ where: { id: reelId } });
+      if (!reelExists) {
+        extra.orphanReelId = reelId;
+        reelId = null;
+      }
+    }
 
     const entity = this.repo.create({
       kind: dto.kind,

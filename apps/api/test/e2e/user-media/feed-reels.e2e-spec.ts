@@ -6,6 +6,7 @@ import { applyTestAppDefaults } from '../test-app';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserReelInteractionEntity } from '../../../src/modules/user-media/infrastructure/entities/user-reel-interaction.entity';
+import { UserReelEntity } from '../../../src/modules/user-media/infrastructure/entities/user-reel.entity';
 
 function setTestEnv() {
   process.env.APP_PORT = process.env.APP_PORT ?? '3001';
@@ -152,5 +153,34 @@ describe('Feed reels (e2e)', () => {
       where: { reelId, kind: 'slideImpression' },
     });
     expect(row).toBeTruthy();
+  });
+
+  it('POST /feed/reels/interactions tolera reelId borrado manualmente', async () => {
+    const deletedReelId = '00000000-0000-4000-8000-000000000099';
+
+    await request(app.getHttpServer())
+      .post('/feed/reels/interactions')
+      .send({
+        kind: 'slideViewStart',
+        sliderId: 'home-featured-reels',
+        route: '/home',
+        reelId: deletedReelId,
+        subjectType: 'anonymous',
+        anonymousId: 'anon-orphan-reel',
+        emittedAt: new Date().toISOString(),
+      })
+      .expect(204);
+
+    const row = await interactionsRepo.findOne({
+      where: { anonymousId: 'anon-orphan-reel', kind: 'slideViewStart' },
+    });
+    expect(row).toBeTruthy();
+    expect(row!.reelId).toBeNull();
+    expect(row!.payload).toContain(deletedReelId);
+
+    const reelStillGone = await app
+      .get(getRepositoryToken(UserReelEntity))
+      .findOne({ where: { id: deletedReelId } });
+    expect(reelStillGone).toBeNull();
   });
 });
