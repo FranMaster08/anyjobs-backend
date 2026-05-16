@@ -104,6 +104,18 @@ jobs:
           envs: IMAGE,DEPLOY_SCRIPT,DEPLOY_ROOT
           script: |
             set -euo pipefail
-            SCRIPT="${DEPLOY_SCRIPT:-$HOME/entorno/anyjobs-deploy}"
-            export ANYJOBS_DEPLOY_ROOT="${DEPLOY_ROOT:-}"
+            SCRIPT="${DEPLOY_SCRIPT:-}"
+            if [ -z "$SCRIPT" ]; then
+              for candidate in \
+                "$HOME/entorno/anyjobs-deploy.sh" \
+                "$HOME/entorno/anyjobs-deploy/anyjobs-deploy.sh" \
+                "$HOME/entorno/anyjobs-deploy/vps/anyjobs-deploy.sh"; do
+                if [ -f "$candidate" ]; then SCRIPT="$candidate"; break; fi
+              done
+            fi
+            if [ -z "$SCRIPT" ] || [ ! -f "$SCRIPT" ]; then
+              echo "anyjobs-deploy: no se encontró el script (define VPS_DEPLOY_SCRIPT)" >&2
+              exit 2
+            fi
+            export ANYJOBS_DEPLOY_ROOT="${DEPLOY_ROOT:-$HOME/entorno}"
             bash "$SCRIPT" --env production --service anyjobs-back --image "$IMAGE"
