@@ -153,3 +153,17 @@ Las URLs que el cliente u origen ya entreguen como absolutas (`http://...` o `ht
 - **WHEN** el cuerpo incluye `images` con `url` absoluta `https://...`
 - **THEN** el valor persistido permanece idéntico a la URL absoluta recibida
 
+### Requirement: Track open request interactions
+
+El sistema MUST exponer `POST /open-requests/interactions` bajo el base path `/open-requests` y responder `204` en éxito. El cuerpo MUST aceptar los eventos definidos en `open-requests-engagement-analytics` (spec raíz del monorepo).
+
+#### Scenario: Interactions endpoint is under open-requests
+
+- **WHEN** el cliente hace POST a `<host>/open-requests/interactions` con `kind` y `openRequestId` válidos
+- **THEN** el sistema responde `204` y persiste el evento en `open_request_interactions`
+
+#### Scenario: Interactions endpoint is public
+
+- **WHEN** el cliente envía `subjectType: anonymous` con `anonymousId` sin autenticación
+- **THEN** el sistema responde `204`
+

@@ -2,8 +2,11 @@ import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { DataSource } from 'typeorm';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { AppModule } from '../../../src/app.module';
 import { applyTestAppDefaults } from '../test-app';
+import { OpenRequestInteractionEntity } from '../../../src/modules/open-requests/infrastructure/entities/open-request-interaction.entity';
 
 function setTestEnv() {
   process.env.APP_PORT = process.env.APP_PORT ?? '3001';
@@ -23,6 +26,7 @@ function setTestEnv() {
 
 describe('Open Requests (e2e)', () => {
   let app: INestApplication;
+  let interactionsRepo: Repository<OpenRequestInteractionEntity>;
 
   const TEST_USER_IDS = [
     '00000000-0000-0000-0000-000000001001',
@@ -67,6 +71,8 @@ describe('Open Requests (e2e)', () => {
 
     const dataSource = app.get(DataSource);
     await seedTestUsers(dataSource);
+
+    interactionsRepo = moduleRef.get(getRepositoryToken(OpenRequestInteractionEntity));
   });
 
   afterAll(async () => {
@@ -86,6 +92,36 @@ describe('Open Requests (e2e)', () => {
     });
     expect(typeof res.body.hasMore).toBe('boolean');
     expect(res.body).toHaveProperty('nextPage');
+  });
+
+  it('POST /open-requests/interactions persiste el evento', async () => {
+    const listRes = await request(app.getHttpServer())
+      .get('/open-requests')
+      .query({ page: 1, pageSize: 1 })
+      .expect(200);
+
+    const openRequestId = listRes.body.items?.[0]?.id as string;
+    expect(openRequestId).toBeTruthy();
+
+    await request(app.getHttpServer())
+      .post('/open-requests/interactions')
+      .send({
+        kind: 'requestListImpression',
+        openRequestId,
+        route: '/solicitudes',
+        listPage: 1,
+        subjectType: 'anonymous',
+        userId: null,
+        anonymousId: 'anon-open-req-e2e',
+        emittedAt: new Date().toISOString(),
+      })
+      .expect(204);
+
+    const rows = await interactionsRepo.find({
+      where: { anonymousId: 'anon-open-req-e2e', kind: 'requestListImpression' },
+    });
+    expect(rows.length).toBeGreaterThanOrEqual(1);
+    expect(rows[0].openRequestId).toBe(openRequestId);
   });
 
   it('GET /open-requests/:id returns detail with images array', async () => {

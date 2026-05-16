@@ -10,12 +10,20 @@ import { OPEN_REQUESTS_REPOSITORY } from './application/ports/tokens';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { OpenRequestEntity } from './infrastructure/entities/open-request.entity';
 import { OpenRequestImageEntity } from './infrastructure/entities/open-request-image.entity';
+import { OpenRequestInteractionEntity } from './infrastructure/entities/open-request-interaction.entity';
+import { OpenRequestsInteractionsService } from './application/open-requests-interactions.service';
 import { TypeOrmOpenRequestsRepository } from './infrastructure/adapters/typeorm-open-requests.repository';
 import { IMAGE_STORAGE_PROVIDER } from './application/ports/tokens';
 import { LocalImageStorageProvider } from './infrastructure/adapters/local-image-storage.provider';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([OpenRequestEntity, OpenRequestImageEntity])],
+  imports: [
+    TypeOrmModule.forFeature([
+      OpenRequestEntity,
+      OpenRequestImageEntity,
+      OpenRequestInteractionEntity,
+    ]),
+  ],
   controllers: [OpenRequestsController],
   providers: [
     ListOpenRequestsUseCase,
@@ -24,6 +32,7 @@ import { LocalImageStorageProvider } from './infrastructure/adapters/local-image
     CreateOpenRequestUseCase,
     UpdateOpenRequestUseCase,
     DeleteOpenRequestUseCase,
+    OpenRequestsInteractionsService,
     { provide: OPEN_REQUESTS_REPOSITORY, useClass: TypeOrmOpenRequestsRepository },
     { provide: IMAGE_STORAGE_PROVIDER, useClass: LocalImageStorageProvider },
   ],

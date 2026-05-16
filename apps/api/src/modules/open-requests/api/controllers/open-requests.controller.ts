@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   HttpCode,
+  HttpStatus,
   Param,
   Patch,
   Post,
@@ -24,6 +25,8 @@ import { GetOpenRequestDetailUseCase } from '../../application/use-cases/get-ope
 import { CreateOpenRequestUseCase } from '../../application/use-cases/create-open-request.use-case';
 import { UpdateOpenRequestUseCase } from '../../application/use-cases/update-open-request.use-case';
 import { DeleteOpenRequestUseCase } from '../../application/use-cases/delete-open-request.use-case';
+import { OpenRequestsInteractionsService } from '../../application/open-requests-interactions.service';
+import { TrackOpenRequestInteractionDto } from '../dto/track-open-request-interaction.dto';
 import {
   CreateOpenRequestDto,
   OpenRequestDetailDto,
@@ -55,6 +58,7 @@ export class OpenRequestsController {
     private readonly createUseCase: CreateOpenRequestUseCase,
     private readonly updateUseCase: UpdateOpenRequestUseCase,
     private readonly deleteUseCase: DeleteOpenRequestUseCase,
+    private readonly interactions: OpenRequestsInteractionsService,
   ) {}
 
   @Public()
@@ -93,6 +97,13 @@ export class OpenRequestsController {
       })),
     });
     return created as unknown as OpenRequestDetailDto;
+  }
+
+  @Public()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post('interactions')
+  async trackInteraction(@Body() body: TrackOpenRequestInteractionDto): Promise<void> {
+    await this.interactions.track(body);
   }
 
   @RequirePermissions('open-requests.read.own')
