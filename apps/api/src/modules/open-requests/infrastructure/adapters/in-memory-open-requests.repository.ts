@@ -3,6 +3,7 @@ import { buildPageMeta } from '../../../../shared/application/pagination/page-re
 import type { PageRequest } from '../../../../shared/application/pagination/page-request';
 import type { PageResult } from '../../../../shared/application/pagination/page-result';
 import type { OpenRequestDetail, OpenRequestListItem } from '../../domain/open-request';
+import { formatRelativePublishedAt } from '../../application/format-relative-published-at';
 import type {
   CreateOpenRequestRecordInput,
   OpenRequestsRepositoryPort,
@@ -84,7 +85,10 @@ export class InMemoryOpenRequestsRepository implements OpenRequestsRepositoryPor
 
     const start = (meta.page - 1) * meta.pageSize;
     const end = start + meta.pageSize;
-    const items = sorted.slice(start, end);
+    const items = sorted.slice(start, end).map((li) => ({
+      ...li,
+      publishedAtLabel: formatRelativePublishedAt(li.publishedAtSort),
+    }));
 
     return { items, meta };
   }
@@ -107,7 +111,10 @@ export class InMemoryOpenRequestsRepository implements OpenRequestsRepositoryPor
 
     const start = (meta.page - 1) * meta.pageSize;
     const end = start + meta.pageSize;
-    const items = sorted.slice(start, end);
+    const items = sorted.slice(start, end).map((li) => ({
+      ...li,
+      publishedAtLabel: formatRelativePublishedAt(li.publishedAtSort),
+    }));
 
     return { items, meta };
   }
@@ -115,7 +122,9 @@ export class InMemoryOpenRequestsRepository implements OpenRequestsRepositoryPor
   async getById(id: string): Promise<OpenRequestDetail | null> {
     if (this.deleted.has(id)) return null;
     const d = this.detailsById.get(id);
-    return d ? { ...d } : null;
+    if (!d) return null;
+    const sort = this.listItems.find((x) => x.id === id)?.publishedAtSort ?? Date.now();
+    return { ...d, publishedAtLabel: formatRelativePublishedAt(sort) };
   }
 
   async create(input: CreateOpenRequestRecordInput): Promise<OpenRequestDetail> {

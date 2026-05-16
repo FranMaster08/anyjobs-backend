@@ -11,6 +11,7 @@ import type {
   OpenRequestsRepositoryPort,
   UpdateOpenRequestRecordPatch,
 } from '../../application/ports/open-requests-repository.port';
+import { formatRelativePublishedAt } from '../../application/format-relative-published-at';
 import { OpenRequestEntity } from '../entities/open-request.entity';
 import { OpenRequestImageEntity } from '../entities/open-request-image.entity';
 
@@ -26,6 +27,7 @@ function parseJsonIfString<T>(value: unknown, fallback: T): T {
 }
 
 function toListItem(e: OpenRequestEntity): OpenRequestListItem {
+  const publishedAtSort = Number(e.publishedAtSort);
   return {
     id: e.id,
     imageUrl: e.imageUrl,
@@ -33,9 +35,9 @@ function toListItem(e: OpenRequestEntity): OpenRequestListItem {
     excerpt: e.excerpt,
     tags: e.tags,
     locationLabel: e.locationLabel,
-    publishedAtLabel: e.publishedAtLabel,
+    publishedAtLabel: formatRelativePublishedAt(publishedAtSort),
     budgetLabel: e.budgetLabel,
-    publishedAtSort: Number(e.publishedAtSort),
+    publishedAtSort,
   };
 }
 
@@ -79,7 +81,7 @@ function toDetail(e: OpenRequestEntity): OpenRequestDetail {
     description: e.description,
     tags: e.tags,
     locationLabel: e.locationLabel,
-    publishedAtLabel: e.publishedAtLabel,
+    publishedAtLabel: formatRelativePublishedAt(Number(e.publishedAtSort)),
     budgetLabel: e.budgetLabel,
     provider: parseJsonIfString(e.provider as any, { name: '', badge: '', subtitle: '' }),
     reputation: e.reputation,

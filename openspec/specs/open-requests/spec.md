@@ -47,6 +47,21 @@ El sistema MUST responder `200` con JSON:
 - **WHEN** el cliente llama `GET /open-requests?sort=date`
 - **THEN** el orden coincide con `publishedAtDesc` por `publishedAtSort` descendente
 
+### Requirement: publishedAtLabel derivado de publishedAtSort en lecturas
+
+En respuestas de listado y detalle de open requests, el sistema MUST calcular `publishedAtLabel` a partir de `publishedAtSort` (epoch en milisegundos almacenado en persistencia) usando reglas de antigüedad relativa en español. El valor persistido en columna `publishedAtLabel` MAY conservarse para compatibilidad pero MUST NOT ser la fuente de verdad en respuestas HTTP de lectura.
+
+#### Scenario: Detalle devuelve antigüedad coherente
+
+- **WHEN** el cliente llama `GET /open-requests/{id}` para un registro con `publishedAtSort` de hace 30 días
+- **THEN** el body MUST incluir `publishedAtLabel` que refleje aproximadamente “Hace 1 mes” (según umbrales del helper)
+- **AND** MUST NOT devolver únicamente el texto fijado al momento de creación si este contradice la antigüedad real
+
+#### Scenario: Listado paginado usa la misma regla
+
+- **WHEN** el cliente llama `GET /open-requests` o `GET /open-requests/mine`
+- **THEN** cada ítem en `items[]` MUST incluir `publishedAtLabel` calculado con la misma función que el detalle
+
 ### Requirement: Get open request detail by id
 El sistema MUST exponer `GET /open-requests/{id}` y responder `200` con JSON que incluya al menos:
 
@@ -56,8 +71,9 @@ El sistema MUST exponer `GET /open-requests/{id}` y responder `200` con JSON que
 - `description: string`
 - `tags: string[]`
 - `locationLabel: string`
-- `publishedAtLabel: string`
+- `publishedAtLabel: string` (derivado de `publishedAtSort` en tiempo de respuesta)
 - `budgetLabel: string`
+- `ownerUserId: string` (cuando exista en persistencia; requerido para UI de publicador)
 - `provider: object` con:
   - `name: string`
   - `badge: string`
@@ -78,6 +94,10 @@ El campo `images` MUST existir y MUST ser un array (aunque sea `[]`).
 #### Scenario: Detail always returns images array
 - **WHEN** el cliente llama `GET /open-requests/{id}` para un id existente
 - **THEN** el sistema responde `200` y el body incluye `images` como array
+
+#### Scenario: Detail includes owner for publisher UI
+- **WHEN** el registro tiene `ownerUserId` en base de datos
+- **THEN** la respuesta MUST incluir `ownerUserId` en el JSON de detalle
 
 ### Requirement: Not found uses message-only JSON
 Si no existe el recurso solicitado, el sistema MUST responder `404` con `{ "message": "..." }`.

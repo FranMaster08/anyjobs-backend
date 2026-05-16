@@ -5,6 +5,7 @@ import { buildPageMeta } from '../../../shared/application/pagination/page-resul
 import type { PageRequest } from '../../../shared/application/pagination/page-request';
 import type { PageResult } from '../../../shared/application/pagination/page-result';
 import type { OpenRequestListItem } from '../domain/open-request';
+import { formatRelativePublishedAt } from './format-relative-published-at';
 import { OpenRequestEntity } from '../infrastructure/entities/open-request.entity';
 import { OpenRequestInteractionEntity } from '../infrastructure/entities/open-request-interaction.entity';
 import { ProposalEntity } from '../../proposals/infrastructure/entities/proposal.entity';
@@ -258,6 +259,7 @@ export class OpenRequestsRankingService {
   }
 
   private toListItem(entity: OpenRequestEntity): OpenRequestListItem {
+    const publishedAtSort = Number(entity.publishedAtSort);
     return {
       id: entity.id,
       imageUrl: entity.imageUrl,
@@ -265,9 +267,9 @@ export class OpenRequestsRankingService {
       excerpt: entity.excerpt,
       tags: entity.tags,
       locationLabel: entity.locationLabel,
-      publishedAtLabel: entity.publishedAtLabel,
+      publishedAtLabel: formatRelativePublishedAt(publishedAtSort),
       budgetLabel: entity.budgetLabel,
-      publishedAtSort: Number(entity.publishedAtSort),
+      publishedAtSort,
     };
   }
 }
