@@ -22,7 +22,7 @@ const baseSchema = z.object({
   APP_PORT: z.coerce.number().int().min(1).max(65535),
   APP_PUBLIC_URL: z.preprocess(
     (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
-    z.string().url().optional(),
+    z.union([z.literal('relative'), z.string().url()]).optional(),
   ),
 
   LOG_LEVEL: z.enum(logLevels),

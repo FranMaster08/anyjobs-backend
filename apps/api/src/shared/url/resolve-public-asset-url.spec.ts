@@ -23,4 +23,11 @@ describe('resolvePublicAssetUrl', () => {
     );
     expect(resolvePublicAssetUrl('http://localhost:3000', 'HTTP://OTHER/x')).toBe('HTTP://OTHER/x');
   });
+
+  it('devuelve ruta relativa cuando la base es relative', () => {
+    expect(resolvePublicAssetUrl('relative', '/uploads/user-media/a.mp4')).toBe(
+      '/uploads/user-media/a.mp4',
+    );
+    expect(resolvePublicAssetUrl('relative', 'uploads/a.jpg')).toBe('/uploads/a.jpg');
+  });
 });

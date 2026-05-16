@@ -9,6 +9,11 @@ import { MediaAssetEntity } from '../infrastructure/entities/media-asset.entity'
 import { UserReelEntity } from '../infrastructure/entities/user-reel.entity';
 import { UserReelInteractionEntity } from '../infrastructure/entities/user-reel-interaction.entity';
 import { UserReelMetricsService, type UserReelMetricsRow } from './user-reel-metrics.service';
+import { UserReelRankingScoreService } from './user-reel-ranking-score.service';
+import {
+  HOME_FEATURED_REELS_DEFAULT_LIMIT,
+  HOME_FEATURED_REELS_MAX_LIMIT,
+} from './home-featured-reels.constants';
 
 export interface FeedReelSlide {
   id: string;
@@ -17,6 +22,8 @@ export interface FeedReelSlide {
   caption?: string;
   creatorUserId: string;
   creatorName?: string;
+  user?: string;
+  counts?: Record<string, string>;
   [key: string]: unknown;
 }
 
@@ -25,15 +32,6 @@ export interface FeedActor {
   anonymousId?: string | null;
 }
 
-const WEIGHTS = {
-  completion: 0.5,
-  saves: 0.15,
-  shares: 0.15,
-  likes: 0.1,
-  earlySkip: 0.2,
-} as const;
-
-const COLD_START_IMPRESSIONS = 10;
 const TESTING_DEFAULT_DAILY_CAP = 200;
 
 @Injectable()
@@ -46,11 +44,24 @@ export class UserReelsFeedRankingService {
     @InjectRepository(UserReelInteractionEntity)
     private readonly interactions: Repository<UserReelInteractionEntity>,
     private readonly metricsService: UserReelMetricsService,
+    private readonly rankingScore: UserReelRankingScoreService,
     private readonly storage: LocalUserMediaStorageProvider,
     private readonly configService: ConfigService<AppConfiguration>,
   ) {}
 
   async listRankedFeed(actor: FeedActor = {}): Promise<FeedReelSlide[]> {
+    return this.listRanked(actor);
+  }
+
+  async listForHome(
+    actor: FeedActor = {},
+    limit = HOME_FEATURED_REELS_DEFAULT_LIMIT,
+  ): Promise<FeedReelSlide[]> {
+    const capped = Math.min(Math.max(1, limit), HOME_FEATURED_REELS_MAX_LIMIT);
+    return this.listRanked(actor, capped);
+  }
+
+  private async listRanked(actor: FeedActor, maxItems?: number): Promise<FeedReelSlide[]> {
     const candidates = await this.reels.find({
       where: {
         moderationStatus: 'approved',
@@ -79,7 +90,7 @@ export class UserReelsFeedRankingService {
         if (!asset || asset.status !== 'ready') return null;
 
         const metrics = metricsById.get(reel.id);
-        const score = this.computeScore(metrics, reel);
+        const score = this.rankingScore.resolveEffectiveScore(metrics, reel);
         const deprioritize = seenReels.has(reel.id);
 
         return {
@@ -89,6 +100,7 @@ export class UserReelsFeedRankingService {
           deprioritize,
           creatorName: ownerNames.get(reel.ownerUserId),
           publicBaseUrl,
+          metrics,
         };
       }),
     );
@@ -103,24 +115,11 @@ export class UserReelsFeedRankingService {
       return bPub - aPub;
     });
 
-    return eligible.map(({ reel, asset, creatorName, publicBaseUrl }) =>
-      this.toSlide(reel, asset, creatorName, publicBaseUrl),
+    const slides = eligible.map(({ reel, asset, creatorName, publicBaseUrl, metrics }) =>
+      this.toSlide(reel, asset, creatorName, publicBaseUrl, metrics),
     );
-  }
 
-  private computeScore(metrics: UserReelMetricsRow | undefined, reel: UserReelEntity): number {
-    if (!metrics || metrics.impressions < COLD_START_IMPRESSIONS) {
-      return (reel.publishedAt?.getTime() ?? reel.createdAt.getTime()) / 1_000_000;
-    }
-
-    const imp = Math.max(metrics.impressions, 1);
-    return (
-      metrics.completionRate * WEIGHTS.completion +
-      (metrics.saves / imp) * WEIGHTS.saves +
-      (metrics.shares / imp) * WEIGHTS.shares +
-      (metrics.likes / imp) * WEIGHTS.likes -
-      metrics.earlySkipRate * WEIGHTS.earlySkip
-    );
+    return maxItems !== undefined ? slides.slice(0, maxItems) : slides;
   }
 
   private async isEligible(
@@ -171,17 +170,18 @@ export class UserReelsFeedRankingService {
   }
 
   private async loadOwnerNames(userIds: string[]): Promise<Map<string, string>> {
-    const unique = [...new Set(userIds)];
+    const unique = [...new Set(userIds.filter((id) => id.length > 0))];
     if (unique.length === 0) return new Map();
 
-    const rows = await this.reels.manager.query(
-      `SELECT id, full_name AS fullName FROM users WHERE id IN (${unique.map(() => '?').join(',')})`,
-      unique,
-    );
+    const rows = await this.reels.manager
+      .createQueryBuilder()
+      .select('u.id', 'id')
+      .addSelect('u.full_name', 'fullName')
+      .from('users', 'u')
+      .where('u.id IN (:...ids)', { ids: unique })
+      .getRawMany<{ id: string; fullName: string }>();
 
-    return new Map(
-      (rows as { id: string; fullName: string }[]).map((r) => [r.id, r.fullName]),
-    );
+    return new Map(rows.map((r) => [r.id, r.fullName]));
   }
 
   private toSlide(
@@ -189,15 +189,32 @@ export class UserReelsFeedRankingService {
     asset: MediaAssetEntity,
     creatorName: string | undefined,
     publicBaseUrl: string,
+    metrics?: UserReelMetricsRow,
   ): FeedReelSlide {
     const mediaUrl = resolvePublicAssetUrl(publicBaseUrl, this.storage.resolveUrl(asset.storageKey));
+    const displayName = creatorName?.trim() || 'Usuario';
+    const counts: Record<string, string> = {};
+
+    if (metrics) {
+      if (metrics.likes > 0) counts.like = String(metrics.likes);
+      if (metrics.saves > 0) counts.bookmark = String(metrics.saves);
+      if (metrics.shares > 0) counts.share = String(metrics.shares);
+    }
+
     return {
       id: reel.id,
       type: asset.mediaKind === 'video' ? 'video' : 'image',
       media: mediaUrl,
-      caption: reel.caption ?? undefined,
+      caption: reel.caption?.trim() ?? '',
       creatorUserId: reel.ownerUserId,
-      user: creatorName,
+      user: displayName,
+      avatar: this.avatarUrl(displayName),
+      music: 'sonido original',
+      counts,
     };
+  }
+
+  private avatarUrl(displayName: string): string {
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&size=96&background=fe2c55&color=fff`;
   }
 }

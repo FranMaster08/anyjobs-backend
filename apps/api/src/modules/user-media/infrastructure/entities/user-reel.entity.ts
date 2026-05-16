@@ -48,6 +48,9 @@ export class UserReelEntity {
   @Column({ name: 'testing_daily_impression_cap', type: 'int', nullable: true })
   testingDailyImpressionCap!: number | null;
 
+  @Column({ name: 'ranking_score', type: 'float', default: 0 })
+  rankingScore!: number;
+
   @CreateDateColumn({ name: 'created_at', type: REEL_DATE_COLUMN_TYPE })
   createdAt!: Date;
 

@@ -4,7 +4,10 @@ export interface AppConfiguration {
   app: {
     nodeEnv: 'development' | 'test' | 'production';
     port: number;
-    /** Base URL pública (sin barra final), p. ej. https://api.midominio.com — usada para resolver URLs relativas de assets. */
+    /**
+     * Base URL pública (sin barra final), p. ej. https://api.midominio.com,
+     * o `relative` para rutas `/uploads/...` en el mismo origen que consume el cliente.
+     */
     publicUrl: string;
   };
   seed: {
