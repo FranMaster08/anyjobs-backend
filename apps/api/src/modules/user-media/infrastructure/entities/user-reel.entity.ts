@@ -45,6 +45,9 @@ export class UserReelEntity {
   @Column({ name: 'published_at', type: REEL_DATE_COLUMN_TYPE, nullable: true })
   publishedAt!: Date | null;
 
+  @Column({ name: 'testing_daily_impression_cap', type: 'int', nullable: true })
+  testingDailyImpressionCap!: number | null;
+
   @CreateDateColumn({ name: 'created_at', type: REEL_DATE_COLUMN_TYPE })
   createdAt!: Date;
 

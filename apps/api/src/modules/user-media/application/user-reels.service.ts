@@ -98,6 +98,9 @@ export class UserReelsService {
       reel.moderationStatus = 'approved';
       reel.distributionStatus = dto.distributionStatus ?? 'testing';
       reel.publishedAt = reel.publishedAt ?? new Date();
+      if (reel.distributionStatus === 'testing' && reel.testingDailyImpressionCap == null) {
+        reel.testingDailyImpressionCap = 200;
+      }
     } else if (dto.distributionStatus !== undefined) {
       reel.distributionStatus = dto.distributionStatus;
       if (this.isPublicDistribution(dto.distributionStatus)) {
