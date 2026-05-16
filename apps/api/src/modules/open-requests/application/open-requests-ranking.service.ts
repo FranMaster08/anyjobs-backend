@@ -12,6 +12,11 @@ import {
   OpenRequestsEngagementMetricsService,
   type OpenRequestEngagementMetricsRow,
 } from './open-requests-engagement-metrics.service';
+import {
+  interactionUserIdWhereSql,
+  openRequestInteractionJoinSql,
+  userIdEqualsParamSql,
+} from './open-requests-query-sql';
 
 export interface OpenRequestsFeedActor {
   userId?: string | null;
@@ -167,7 +172,7 @@ export class OpenRequestsRankingService {
       });
 
     if (actor.userId) {
-      qb.andWhere('i.user_id = :userId', { userId: actor.userId });
+      qb.andWhere(interactionUserIdWhereSql('i'), { userId: actor.userId });
     } else if (actor.anonymousId) {
       qb.andWhere('i.anonymous_id = :anonymousId', { anonymousId: actor.anonymousId });
     } else {
@@ -181,12 +186,12 @@ export class OpenRequestsRankingService {
   private async actorTagInterests(actor: OpenRequestsFeedActor): Promise<Set<string>> {
     const qb = this.interactions
       .createQueryBuilder('i')
-      .innerJoin(OpenRequestEntity, 'r', 'r.id = i.open_request_id')
+      .innerJoin(OpenRequestEntity, 'r', openRequestInteractionJoinSql('r', 'i'))
       .select('r.tags', 'tags')
       .where('i.kind = :kind', { kind: 'requestDetailView' });
 
     if (actor.userId) {
-      qb.andWhere('i.user_id = :userId', { userId: actor.userId });
+      qb.andWhere(interactionUserIdWhereSql('i'), { userId: actor.userId });
     } else if (actor.anonymousId) {
       qb.andWhere('i.anonymous_id = :anonymousId', { anonymousId: actor.anonymousId });
     } else {
@@ -212,7 +217,7 @@ export class OpenRequestsRankingService {
       .createQueryBuilder('p')
       .innerJoin(OpenRequestEntity, 'r', 'r.id = p.request_id')
       .select('DISTINCT r.owner_user_id', 'ownerUserId')
-      .where('p.user_id = :userId', { userId: actor.userId })
+      .where(userIdEqualsParamSql('p.user_id'), { userId: actor.userId })
       .andWhere('r.owner_user_id IS NOT NULL')
       .getRawMany<{ ownerUserId: string }>();
 
@@ -232,13 +237,13 @@ export class OpenRequestsRankingService {
     const boost = new Map<string, number>();
     const qb = this.interactions
       .createQueryBuilder('i')
-      .innerJoin(OpenRequestEntity, 'r', 'r.id = i.open_request_id')
+      .innerJoin(OpenRequestEntity, 'r', openRequestInteractionJoinSql('r', 'i'))
       .select('DISTINCT r.owner_user_id', 'ownerUserId')
       .where('i.kind = :kind', { kind: 'requestDetailView' })
       .andWhere('r.owner_user_id IS NOT NULL');
 
     if (actor.userId) {
-      qb.andWhere('i.user_id = :userId', { userId: actor.userId });
+      qb.andWhere(interactionUserIdWhereSql('i'), { userId: actor.userId });
     } else if (actor.anonymousId) {
       qb.andWhere('i.anonymous_id = :anonymousId', { anonymousId: actor.anonymousId });
     } else {

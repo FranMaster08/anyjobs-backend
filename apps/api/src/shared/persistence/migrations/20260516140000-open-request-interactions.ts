@@ -16,7 +16,7 @@ export class OpenRequestInteractions20260516140000 implements MigrationInterface
             generationStrategy: 'uuid',
           },
           { name: 'kind', type: 'varchar', length: '64' },
-          { name: 'open_request_id', type: 'varchar', length: '64' },
+          { name: 'open_request_id', type: 'uuid' },
           { name: 'route', type: 'varchar', length: '128', isNullable: true },
           { name: 'list_page', type: 'int', isNullable: true },
           { name: 'subject_type', type: 'varchar', length: '16' },
