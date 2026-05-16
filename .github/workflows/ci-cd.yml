@@ -117,5 +117,19 @@ jobs:
               echo "anyjobs-deploy: no se encontró el script (define VPS_DEPLOY_SCRIPT)" >&2
               exit 2
             fi
-            export ANYJOBS_DEPLOY_ROOT="${DEPLOY_ROOT:-$HOME/entorno}"
+            BASE="${DEPLOY_ROOT:-}"
+            if [ -z "$BASE" ]; then
+              for candidate in \
+                "$HOME/entorno" \
+                "$HOME/entorno/production" \
+                "$HOME/entorno-production" \
+                "/opt/anyjobs/production"; do
+                if [ -f "$candidate/.env" ]; then BASE="$candidate"; break; fi
+              done
+            fi
+            if [ -z "$BASE" ] || [ ! -f "$BASE/.env" ]; then
+              echo "anyjobs-deploy: no hay .env (define ANYJOBS_DEPLOY_ROOT)" >&2
+              exit 2
+            fi
+            export ANYJOBS_DEPLOY_ROOT="$BASE"
             bash "$SCRIPT" --env production --service anyjobs-back --image "$IMAGE"
