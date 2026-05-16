@@ -80,3 +80,30 @@ jobs:
           labels: |
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+
+  deploy:
+    needs: build-and-push
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - id: sha
+        run: echo "short=$(echo '${{ github.sha }}' | cut -c1-7)" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy backend on VPS
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          IMAGE: ghcr.io/franmaster08/anyjobs-backend:sha-${{ steps.sha.outputs.short }}
+          DEPLOY_SCRIPT: ${{ secrets.VPS_DEPLOY_SCRIPT }}
+          DEPLOY_ROOT: ${{ secrets.ANYJOBS_DEPLOY_ROOT }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT || 22 }}
+          envs: IMAGE,DEPLOY_SCRIPT,DEPLOY_ROOT
+          script: |
+            set -euo pipefail
+            SCRIPT="${DEPLOY_SCRIPT:-$HOME/entorno/anyjobs-deploy}"
+            export ANYJOBS_DEPLOY_ROOT="${DEPLOY_ROOT:-}"
+            bash "$SCRIPT" --env production --service anyjobs-back --image "$IMAGE"
