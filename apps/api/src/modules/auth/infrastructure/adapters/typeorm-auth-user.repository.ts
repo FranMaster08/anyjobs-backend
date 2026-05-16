@@ -19,6 +19,7 @@ function toAuthUser(e: UserEntity): AuthUser {
     createdAt: e.createdAt.toISOString(),
     countryCode: e.countryCode ?? undefined,
     city: e.city ?? undefined,
+    municipality: e.municipality ?? undefined,
     area: e.area ?? undefined,
     coverageRadiusKm: e.coverageRadiusKm ?? undefined,
     workerCategories: e.workerCategories ?? undefined,
@@ -52,6 +53,7 @@ export class TypeOrmAuthUserRepository implements UserRepositoryPort {
       phoneVerified: user.phoneVerified,
       countryCode: user.countryCode ?? null,
       city: user.city ?? null,
+      municipality: user.municipality ?? null,
       area: user.area ?? null,
       coverageRadiusKm: user.coverageRadiusKm ?? null,
       workerCategories: user.workerCategories ?? null,
@@ -98,6 +100,7 @@ export class TypeOrmAuthUserRepository implements UserRepositoryPort {
       phoneVerified: patch.phoneVerified ?? existing.phoneVerified,
       countryCode: patch.countryCode !== undefined ? (patch.countryCode ?? null) : existing.countryCode,
       city: patch.city !== undefined ? (patch.city ?? null) : existing.city,
+      municipality: patch.municipality !== undefined ? (patch.municipality ?? null) : existing.municipality,
       area: patch.area !== undefined ? (patch.area ?? null) : existing.area,
       coverageRadiusKm:
         patch.coverageRadiusKm !== undefined ? (patch.coverageRadiusKm ?? null) : existing.coverageRadiusKm,

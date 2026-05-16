@@ -8,7 +8,7 @@ import { UserProfilePolicy } from '../../domain';
 export interface UpdatePersonalInfoInput {
   userId: string;
   actorRoles: UserRole[];
-  documentType: 'DNI' | 'NIE' | 'PASSPORT';
+  documentType: 'DNI' | 'NIE' | 'PASSPORT' | 'CC';
   documentNumber: string;
   birthDate: string; // YYYY-MM-DD
   gender?: 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY';

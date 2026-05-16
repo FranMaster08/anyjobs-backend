@@ -4,6 +4,7 @@ import type {
   RegistrationFlowState,
   RegistrationFlowStorePort,
 } from '../../application/ports/registration-flow-store.port';
+import { isRegistrationFlowActive } from '../../application/registration-flow.utils';
 
 @Injectable()
 export class InMemoryRegistrationFlowStore implements RegistrationFlowStorePort {
@@ -29,14 +30,14 @@ export class InMemoryRegistrationFlowStore implements RegistrationFlowStorePort 
 
   async findActiveFlowByEmail(email: string): Promise<RegistrationFlowState | null> {
     for (const flow of this.flows.values()) {
-      if (flow.email === email && !flow.completedAt) return flow;
+      if (flow.email === email && isRegistrationFlowActive(flow)) return flow;
     }
     return null;
   }
 
   async findActiveFlowByPhoneNumber(phoneNumber: string): Promise<RegistrationFlowState | null> {
     for (const flow of this.flows.values()) {
-      if (flow.phoneNumber === phoneNumber && !flow.completedAt) return flow;
+      if (flow.phoneNumber === phoneNumber && isRegistrationFlowActive(flow)) return flow;
     }
     return null;
   }

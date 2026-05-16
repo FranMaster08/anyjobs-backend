@@ -51,6 +51,9 @@ export class UserEntity {
   city!: string | null;
 
   @Column({ type: 'varchar', length: 120, nullable: true })
+  municipality!: string | null;
+
+  @Column({ type: 'varchar', length: 120, nullable: true })
   area!: string | null;
 
   @Column({ name: 'coverage_radius_km', type: 'int', nullable: true })

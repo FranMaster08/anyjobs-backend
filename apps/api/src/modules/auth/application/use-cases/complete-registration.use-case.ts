@@ -107,16 +107,36 @@ export class CompleteRegistrationUseCase {
       fieldErrors.contactVerification = 'At least one verification is required for CLIENT.';
     }
 
-    if (!flow.city) {
-      fieldErrors.location = 'Location is required.';
+    if (!flow.city?.trim()) {
+      fieldErrors.city = 'City is required.';
+    }
+    if (!flow.area?.trim()) {
+      fieldErrors.area = 'Area is required.';
+    }
+    if (!flow.countryCode?.trim()) {
+      fieldErrors.countryCode = 'Country code is required.';
     }
 
     if (isWorker && (!flow.workerCategories || flow.workerCategories.length < 1)) {
       fieldErrors.workerCategories = 'At least one category is required for WORKER.';
     }
 
-    if (isWorker && (!flow.documentType || !flow.documentNumber || !flow.birthDate)) {
-      fieldErrors.personalInfo = 'documentType, documentNumber and birthDate are required for WORKER.';
+    if (isWorker) {
+      if (!flow.documentType) {
+        fieldErrors.documentType = 'Document type is required for WORKER.';
+      }
+      if (!flow.documentNumber?.trim()) {
+        fieldErrors.documentNumber = 'Document number is required for WORKER.';
+      }
+      if (!flow.birthDate?.trim()) {
+        fieldErrors.birthDate = 'Birth date is required for WORKER.';
+      }
+      if (!flow.gender) {
+        fieldErrors.gender = 'Gender is required for WORKER.';
+      }
+      if (!flow.nationality?.trim()) {
+        fieldErrors.nationality = 'Nationality is required for WORKER.';
+      }
     }
 
     if (Object.keys(fieldErrors).length > 0) {

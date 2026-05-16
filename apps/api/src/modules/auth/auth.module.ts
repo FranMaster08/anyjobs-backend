@@ -11,6 +11,9 @@ import { UpdateRegistrationWorkerProfileUseCase } from './application/use-cases/
 import { UpdateRegistrationClientProfileUseCase } from './application/use-cases/update-registration-client-profile.use-case';
 import { UpdateRegistrationPersonalInfoUseCase } from './application/use-cases/update-registration-personal-info.use-case';
 import { CompleteRegistrationUseCase } from './application/use-cases/complete-registration.use-case';
+import { CompleteOnboardingRegistrationUseCase } from './application/use-cases/complete-onboarding-registration.use-case';
+import { GetRegistrationStatusUseCase } from './application/use-cases/get-registration-status.use-case';
+import { GetLocationCatalogUseCase } from './application/use-cases/get-location-catalog.use-case';
 import {
   AUTH_PASSWORD_HASHER,
   AUTH_REGISTRATION_FLOW_STORE,
@@ -21,13 +24,27 @@ import { ScryptPasswordHasher } from './infrastructure/adapters/scrypt-password-
 import { UuidTokenService } from './infrastructure/adapters/uuid-token.service';
 import { AuthTokenRegistry } from './infrastructure/adapters/auth-token-registry';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { UserEntity } from '../../shared/persistence/entities';
+import {
+  GeoDivisionEntity,
+  GeoMunicipalityEntity,
+  GeoNeighborhoodEntity,
+  UserEntity,
+} from '../../shared/persistence/entities';
+import { TypeOrmLocationCatalogRepository } from '../../shared/persistence/repositories/typeorm-location-catalog.repository';
 import { RegistrationFlowEntity } from './infrastructure/entities/registration-flow.entity';
 import { TypeOrmAuthUserRepository } from './infrastructure/adapters/typeorm-auth-user.repository';
 import { TypeOrmRegistrationFlowStore } from './infrastructure/adapters/typeorm-registration-flow.store';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([UserEntity, RegistrationFlowEntity])],
+  imports: [
+    TypeOrmModule.forFeature([
+      UserEntity,
+      RegistrationFlowEntity,
+      GeoDivisionEntity,
+      GeoMunicipalityEntity,
+      GeoNeighborhoodEntity,
+    ]),
+  ],
   controllers: [AuthController],
   providers: [
     AuthTokenRegistry,
@@ -42,6 +59,10 @@ import { TypeOrmRegistrationFlowStore } from './infrastructure/adapters/typeorm-
     UpdateRegistrationClientProfileUseCase,
     UpdateRegistrationPersonalInfoUseCase,
     CompleteRegistrationUseCase,
+    CompleteOnboardingRegistrationUseCase,
+    GetRegistrationStatusUseCase,
+    GetLocationCatalogUseCase,
+    TypeOrmLocationCatalogRepository,
     { provide: AUTH_USER_REPOSITORY, useClass: TypeOrmAuthUserRepository },
     { provide: AUTH_PASSWORD_HASHER, useClass: ScryptPasswordHasher },
     { provide: AUTH_TOKEN_SERVICE, useClass: UuidTokenService },

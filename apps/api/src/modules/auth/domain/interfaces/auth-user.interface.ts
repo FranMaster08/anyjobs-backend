@@ -15,13 +15,14 @@ export interface AuthUser {
 
   countryCode?: string;
   city?: string;
+  municipality?: string;
   area?: string;
   coverageRadiusKm?: number;
   workerCategories?: string[];
   workerHeadline?: string;
   workerBio?: string;
   preferredPaymentMethod?: 'CARD' | 'TRANSFER' | 'CASH' | 'WALLET';
-  documentType?: 'DNI' | 'NIE' | 'PASSPORT';
+  documentType?: 'DNI' | 'NIE' | 'PASSPORT' | 'CC';
   documentNumber?: string;
   birthDate?: string;
   gender?: 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY';

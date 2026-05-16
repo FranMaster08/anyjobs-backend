@@ -81,9 +81,10 @@ describe('Auth (e2e)', () => {
       .patch('/auth/registration/location')
       .set('Cookie', cookies)
       .send({
-        city: 'Madrid',
-        countryCode: 'ES',
-        area: 'Centro',
+        city: 'Bogotá D.C.',
+        municipality: 'Bogotá',
+        countryCode: 'CO',
+        area: 'Chapinero',
         coverageRadiusKm: 10,
       })
       .expect(204);
@@ -101,10 +102,11 @@ describe('Auth (e2e)', () => {
       .patch('/auth/registration/personal-info')
       .set('Cookie', cookies)
       .send({
-        documentType: 'DNI',
-        documentNumber: '12345678A',
+        documentType: 'CC',
+        documentNumber: '1234567890',
         birthDate: '1990-01-01',
-        nationality: 'ES',
+        gender: 'MALE',
+        nationality: 'CO',
       })
       .expect(204);
 
@@ -140,12 +142,12 @@ describe('Auth (e2e)', () => {
     expect(res.headers['x-correlation-id']).toBeTruthy();
   });
 
-  it('email-available returns available=false after register', async () => {
+  it('email-available stays available=true for register draft (only definitive users block)', async () => {
     await request(app.getHttpServer())
       .post('/auth/register')
       .send({
         fullName: 'Other',
-        email: 'used@example.com',
+        email: 'draft-only@example.com',
         phoneNumber: '+34600111333',
         password: 'secret123',
         roles: ['CLIENT'],
@@ -154,29 +156,41 @@ describe('Auth (e2e)', () => {
 
     const res = await request(app.getHttpServer())
       .get('/auth/email-available')
-      .query({ email: 'used@example.com' })
+      .query({ email: 'draft-only@example.com' })
       .expect(200);
 
-    expect(res.body).toEqual({ available: false });
+    expect(res.body).toEqual({ available: true });
   });
 
-  it('phone-available returns available=false after register', async () => {
+  it('email-available returns available=false after onboarding complete', async () => {
     const unique = Date.now();
-    const phoneNumber = `+34601${String(unique).slice(-8)}`;
+    const email = `completed-${unique}@example.com`;
+    const phoneNumber = `+34602${String(unique).slice(-8)}`;
+
     await request(app.getHttpServer())
-      .post('/auth/register')
+      .post('/auth/register/complete')
       .send({
-        fullName: 'Other Phone',
-        email: `used-phone-${unique}@example.com`,
-        phoneNumber,
-        password: 'secret123',
-        roles: ['CLIENT'],
+        account: {
+          fullName: 'Completed User',
+          email,
+          phoneNumber,
+          password: 'secret123',
+          roles: ['CLIENT'],
+        },
+        emailVerified: true,
+        phoneVerified: false,
+        location: {
+          city: 'Bogotá D.C.',
+          municipality: 'Bogotá',
+          area: 'Chapinero',
+          countryCode: 'CO',
+        },
       })
-      .expect(200);
+      .expect(204);
 
     const res = await request(app.getHttpServer())
-      .get('/auth/phone-available')
-      .query({ phoneNumber })
+      .get('/auth/email-available')
+      .query({ email })
       .expect(200);
 
     expect(res.body).toEqual({ available: false });

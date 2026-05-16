@@ -19,6 +19,9 @@ export class UserPublicProfileResponseDto {
   city?: string;
 
   @ApiPropertyOptional()
+  municipality?: string;
+
+  @ApiPropertyOptional()
   area?: string;
 
   /** Headline público de worker (si aplica). */

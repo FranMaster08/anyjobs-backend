@@ -34,6 +34,9 @@ export class UserPrivateProfileResponseDto {
   city?: string;
 
   @ApiPropertyOptional()
+  municipality?: string;
+
+  @ApiPropertyOptional()
   area?: string;
 
   @ApiPropertyOptional()
@@ -51,8 +54,8 @@ export class UserPrivateProfileResponseDto {
   @ApiPropertyOptional({ enum: ['CARD', 'TRANSFER', 'CASH', 'WALLET'] })
   preferredPaymentMethod?: 'CARD' | 'TRANSFER' | 'CASH' | 'WALLET';
 
-  @ApiPropertyOptional({ enum: ['DNI', 'NIE', 'PASSPORT'] })
-  documentType?: 'DNI' | 'NIE' | 'PASSPORT';
+  @ApiPropertyOptional({ enum: ['DNI', 'NIE', 'PASSPORT', 'CC'] })
+  documentType?: 'DNI' | 'NIE' | 'PASSPORT' | 'CC';
 
   @ApiPropertyOptional()
   documentNumber?: string;

@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, MaxLength, Min, MinLength } from 'class-validator';
+import { SUPPORTED_COUNTRY_CODES } from '../../../../shared/location/supported-location.catalog';
 
 export class UpdateLocationRequestDto {
   @ApiProperty({ example: 'Barcelona', description: 'Ciudad' })
@@ -7,15 +8,21 @@ export class UpdateLocationRequestDto {
   @IsNotEmpty()
   city!: string;
 
-  @ApiPropertyOptional({ example: 'Eixample', description: 'Zona/área' })
-  @IsOptional()
+  @ApiProperty({ example: 'Medellín', description: 'Municipio' })
   @IsString()
-  area?: string;
+  @IsNotEmpty()
+  municipality!: string;
 
-  @ApiPropertyOptional({ example: 'ES', description: 'Código de país (ej. ES)' })
-  @IsOptional()
+  @ApiProperty({ example: 'El Poblado', description: 'Barrio (texto libre)' })
   @IsString()
-  countryCode?: string;
+  @IsNotEmpty()
+  @MinLength(2)
+  @MaxLength(120)
+  area!: string;
+
+  @ApiProperty({ example: 'CO', enum: [...SUPPORTED_COUNTRY_CODES], description: 'País soportado (CO, AR)' })
+  @IsIn([...SUPPORTED_COUNTRY_CODES])
+  countryCode!: (typeof SUPPORTED_COUNTRY_CODES)[number];
 
   @ApiPropertyOptional({ example: 10, description: 'Radio de cobertura en km' })
   @IsOptional()

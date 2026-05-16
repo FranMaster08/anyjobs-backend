@@ -25,7 +25,7 @@ export interface StoredUser {
   workerHeadline?: string;
   workerBio?: string;
   preferredPaymentMethod?: 'CARD' | 'TRANSFER' | 'CASH' | 'WALLET';
-  documentType?: 'DNI' | 'NIE' | 'PASSPORT';
+  documentType?: 'DNI' | 'NIE' | 'PASSPORT' | 'CC';
   documentNumber?: string;
   birthDate?: string; // YYYY-MM-DD
   gender?: 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY';

@@ -9,6 +9,7 @@ export interface UserProfileUser {
 
   countryCode?: string;
   city?: string;
+  municipality?: string;
   area?: string;
   coverageRadiusKm?: number;
 

@@ -3,13 +3,15 @@ import { AppException } from '../../../../shared/errors/app-exception';
 import { AUTH_REGISTRATION_FLOW_STORE } from '../ports';
 import type { RegistrationFlowStorePort } from '../ports';
 import { UserProfilePolicy } from '../../../user-profile/domain/policies/user-profile.policy';
+import type { DocumentType } from '../../../user-profile/domain/types/document-type.type';
+import type { Gender } from '../../../user-profile/domain/types/gender.type';
 
 export interface UpdateRegistrationPersonalInfoInput {
   flowId: string;
-  documentType?: 'DNI' | 'NIE' | 'PASSPORT';
+  documentType?: DocumentType;
   documentNumber?: string;
   birthDate?: string;
-  gender?: 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY';
+  gender?: Gender;
   nationality?: string;
 }
 
@@ -30,7 +32,7 @@ export class UpdateRegistrationPersonalInfoUseCase {
 
     await this.flowStore.updateFlow(input.flowId, {
       ...UserProfilePolicy.buildPatchForPersonalInfo({
-        documentType: input.documentType as 'DNI' | 'NIE' | 'PASSPORT',
+        documentType: input.documentType as DocumentType,
         documentNumber: input.documentNumber as string,
         birthDate: input.birthDate as string,
         gender: input.gender,

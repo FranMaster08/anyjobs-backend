@@ -28,10 +28,13 @@ export class UserDto {
   @ApiPropertyOptional({ example: 'ES' })
   countryCode?: string;
 
-  @ApiPropertyOptional({ example: 'Barcelona' })
+  @ApiPropertyOptional({ example: 'Antioquia', description: 'Departamento o provincia' })
   city?: string;
 
-  @ApiPropertyOptional({ example: 'Eixample' })
+  @ApiPropertyOptional({ example: 'Medellín', description: 'Municipio' })
+  municipality?: string;
+
+  @ApiPropertyOptional({ example: 'El Poblado', description: 'Barrio' })
   area?: string;
 
   @ApiPropertyOptional({ example: 10 })
@@ -49,8 +52,8 @@ export class UserDto {
   @ApiPropertyOptional({ example: 'CARD', enum: ['CARD', 'TRANSFER', 'CASH', 'WALLET'] })
   preferredPaymentMethod?: 'CARD' | 'TRANSFER' | 'CASH' | 'WALLET';
 
-  @ApiPropertyOptional({ example: 'DNI', enum: ['DNI', 'NIE', 'PASSPORT'] })
-  documentType?: 'DNI' | 'NIE' | 'PASSPORT';
+  @ApiPropertyOptional({ example: 'DNI', enum: ['DNI', 'NIE', 'PASSPORT', 'CC'] })
+  documentType?: 'DNI' | 'NIE' | 'PASSPORT' | 'CC';
 
   @ApiPropertyOptional({ example: '12345678A' })
   documentNumber?: string;

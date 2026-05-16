@@ -48,7 +48,13 @@ async function registerAndLogin(app: INestApplication): Promise<{ token: string;
   await request(app.getHttpServer())
     .patch('/auth/registration/location')
     .set('Cookie', cookies)
-    .send({ city: 'Madrid', countryCode: 'ES', area: 'Centro', coverageRadiusKm: 5 })
+    .send({
+      city: 'Bogotá D.C.',
+      municipality: 'Bogotá',
+      countryCode: 'CO',
+      area: 'Chapinero',
+      coverageRadiusKm: 5,
+    })
     .expect(204);
 
   await request(app.getHttpServer())

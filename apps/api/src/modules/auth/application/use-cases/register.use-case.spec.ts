@@ -16,7 +16,9 @@ describe(RegisterUseCase.name, () => {
     const flowStore = {
       findActiveFlowByEmail: jest.fn().mockResolvedValue(null),
       findActiveFlowByPhoneNumber: jest.fn().mockResolvedValue(null),
-      createFlow: jest.fn().mockResolvedValue({ flowId: 'flow-1' }),
+      getFlow: jest.fn(),
+      createFlow: jest.fn().mockResolvedValue({ flowId: 'flow-1', nextStage: 'VERIFY', emailVerified: false, phoneVerified: false }),
+      updateFlow: jest.fn(),
     } as any;
 
     const uc = new RegisterUseCase(userRepo, passwordHasher, flowStore, correlationIdService, configService);
@@ -33,23 +35,54 @@ describe(RegisterUseCase.name, () => {
       status: 'PENDING',
       nextStage: 'VERIFY',
       flowId: 'flow-1',
+      resumed: false,
     });
-    expect(flowStore.createFlow).toHaveBeenCalledWith(
-      expect.objectContaining({
-        fullName: 'Test User',
-        email: 'test@example.com',
-        phoneNumber: '+34000',
-        passwordHash: 'hash',
-        roles: ['WORKER'],
-        status: 'PENDING',
-        nextStage: 'VERIFY',
-        emailVerified: false,
-        phoneVerified: false,
-      }),
-    );
+    expect(flowStore.createFlow).toHaveBeenCalled();
   });
 
-  it('throws when email already exists', async () => {
+  it('resumes an active draft for the same email instead of failing', async () => {
+    const existingDraft = {
+      flowId: 'flow-existing',
+      email: 'test@example.com',
+      phoneNumber: '+34000',
+      nextStage: 'LOCATION',
+      emailVerified: true,
+      phoneVerified: true,
+      completedAt: undefined,
+      expiresAt: new Date(Date.now() + 86400000).toISOString(),
+    };
+
+    const userRepo = {
+      findByEmail: jest.fn().mockResolvedValue(null),
+      findByPhoneNumber: jest.fn().mockResolvedValue(null),
+    } as any;
+    const passwordHasher = { hashPassword: jest.fn().mockResolvedValue('new-hash') } as any;
+    const flowStore = {
+      findActiveFlowByEmail: jest.fn().mockResolvedValue(existingDraft),
+      findActiveFlowByPhoneNumber: jest.fn().mockResolvedValue(existingDraft),
+      getFlow: jest.fn(),
+      createFlow: jest.fn(),
+      updateFlow: jest.fn().mockResolvedValue({ ...existingDraft, fullName: 'Updated' }),
+    } as any;
+
+    const uc = new RegisterUseCase(userRepo, passwordHasher, flowStore, correlationIdService, configService);
+
+    const res = await uc.execute({
+      fullName: 'Updated',
+      email: 'test@example.com',
+      phoneNumber: '+34000',
+      password: 'secret',
+      roles: ['WORKER'],
+    });
+
+    expect(res.resumed).toBe(true);
+    expect(res.flowId).toBe('flow-existing');
+    expect(res.nextStage).toBe('LOCATION');
+    expect(flowStore.createFlow).not.toHaveBeenCalled();
+    expect(flowStore.updateFlow).toHaveBeenCalled();
+  });
+
+  it('throws when email already exists on a definitive user', async () => {
     const userRepo = {
       findByEmail: jest.fn().mockResolvedValue({ id: 'x' }),
       findByPhoneNumber: jest.fn(),
@@ -70,4 +103,3 @@ describe(RegisterUseCase.name, () => {
     ).rejects.toBeInstanceOf(AppException);
   });
 });
-

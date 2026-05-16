@@ -73,7 +73,12 @@ describe('Users /me (e2e)', () => {
       .set('authorization', 'Bearer test-token')
       .set('x-user-id', userId)
       .set('x-permissions', 'users.me.write')
-      .send({ city: 'Barcelona', area: 'Eixample' })
+      .send({
+        city: 'Ciudad Autónoma de Buenos Aires',
+        municipality: 'Ciudad Autónoma de Buenos Aires',
+        area: 'Palermo',
+        countryCode: 'AR',
+      })
       .expect(204);
   });
 

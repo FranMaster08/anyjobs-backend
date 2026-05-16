@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Repository } from 'typeorm';
 import type { RegistrationFlowState, RegistrationFlowStorePort } from '../../application/ports/registration-flow-store.port';
+import { isRegistrationFlowActive } from '../../application/registration-flow.utils';
 import { RegistrationFlowEntity } from '../entities/registration-flow.entity';
 
 function toState(flow: RegistrationFlowEntity): RegistrationFlowState {
@@ -82,12 +83,16 @@ export class TypeOrmRegistrationFlowStore implements RegistrationFlowStorePort {
 
   async findActiveFlowByEmail(email: string): Promise<RegistrationFlowState | null> {
     const flow = await this.repo.findOne({ where: { email, completedAt: IsNull() } });
-    return flow ? toState(flow) : null;
+    if (!flow) return null;
+    const state = toState(flow);
+    return isRegistrationFlowActive(state) ? state : null;
   }
 
   async findActiveFlowByPhoneNumber(phoneNumber: string): Promise<RegistrationFlowState | null> {
     const flow = await this.repo.findOne({ where: { phoneNumber, completedAt: IsNull() } });
-    return flow ? toState(flow) : null;
+    if (!flow) return null;
+    const state = toState(flow);
+    return isRegistrationFlowActive(state) ? state : null;
   }
 
   async updateFlow(

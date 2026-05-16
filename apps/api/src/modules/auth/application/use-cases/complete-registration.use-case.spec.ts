@@ -29,7 +29,7 @@ describe(CompleteRegistrationUseCase.name, () => {
       emailVerified: true,
       phoneVerified: false,
       countryCode: null,
-      city: 'Madrid',
+      city: 'Bogotá D.C.',
       area: null,
       coverageRadiusKm: null,
       workerCategories: null,
@@ -66,21 +66,32 @@ describe(CompleteRegistrationUseCase.name, () => {
         nextStage: 'PERSONAL_INFO',
         emailVerified: true,
         phoneVerified: true,
-        city: 'Madrid',
+        city: 'Bogotá D.C.',
+        municipality: 'Bogotá',
+        municipality: 'Bogotá',
+      area: 'Chapinero',
+        countryCode: 'CO',
         workerCategories: ['limpieza'],
-        documentType: 'DNI',
-        documentNumber: '12345678A',
+        documentType: 'CC',
+        documentNumber: '1234567890',
         birthDate: '1990-01-01',
+        gender: 'MALE',
+        nationality: 'CO',
       }),
     } as any;
 
     const flowEntity = buildFlowEntity({
       roles: ['WORKER'],
       phoneVerified: true,
+      municipality: 'Bogotá',
+      area: 'Chapinero',
+      countryCode: 'CO',
       workerCategories: ['limpieza'],
-      documentType: 'DNI',
-      documentNumber: '12345678A',
+      documentType: 'CC',
+      documentNumber: '1234567890',
       birthDate: '1990-01-01',
+      gender: 'MALE',
+      nationality: 'CO',
     });
     const flowRepo = {
       findOne: jest.fn().mockResolvedValue(flowEntity),
@@ -137,7 +148,7 @@ describe(CompleteRegistrationUseCase.name, () => {
         nextStage: 'PERSONAL_INFO',
         emailVerified: true,
         phoneVerified: false,
-        city: 'Madrid',
+        city: 'Bogotá D.C.',
       }),
     } as any;
     const flowRepo = {
@@ -177,7 +188,7 @@ describe(CompleteRegistrationUseCase.name, () => {
         nextStage: 'PERSONAL_INFO',
         emailVerified: true,
         phoneVerified: false,
-        city: 'Madrid',
+        city: 'Bogotá D.C.',
       }),
     } as any;
     const flowRepo = {
@@ -205,5 +216,57 @@ describe(CompleteRegistrationUseCase.name, () => {
     const uc = new CompleteRegistrationUseCase(flowStore, dataSource, correlationIdService, configService);
 
     await expect(uc.execute({ flowId: 'flow-1' })).rejects.toBeInstanceOf(AppException);
+  });
+
+  it('rejects completion when WORKER flow is missing required personal fields', async () => {
+    const flowStore = {
+      getFlow: jest.fn().mockResolvedValue({
+        flowId: 'flow-1',
+        roles: ['WORKER'],
+        emailVerified: true,
+        phoneVerified: true,
+        city: 'Bogotá D.C.',
+        municipality: 'Bogotá',
+        municipality: 'Bogotá',
+      area: 'Chapinero',
+        countryCode: 'CO',
+        workerCategories: ['limpieza'],
+        documentType: 'PASSPORT',
+        documentNumber: 'AB123456',
+        birthDate: '1990-01-01',
+      }),
+    } as any;
+    const flowRepo = {
+      findOne: jest.fn().mockResolvedValue(
+        buildFlowEntity({
+          roles: ['WORKER'],
+          phoneVerified: true,
+          municipality: 'Bogotá',
+      area: 'Chapinero',
+          countryCode: 'CO',
+          workerCategories: ['limpieza'],
+          documentType: 'PASSPORT',
+          documentNumber: 'AB123456',
+          birthDate: '1990-01-01',
+        }),
+      ),
+      save: jest.fn(),
+    };
+    const userRepo = { findOne: jest.fn(), create: jest.fn(), save: jest.fn() };
+    const manager = {
+      getRepository: jest.fn().mockImplementation((entity: unknown) => {
+        if (entity === RegistrationFlowEntity) return flowRepo;
+        if (entity === UserEntity) return userRepo;
+        throw new Error('Unexpected repository');
+      }),
+    };
+    const dataSource = {
+      transaction: jest.fn().mockImplementation(async (cb: (mgr: typeof manager) => unknown) => cb(manager)),
+    } as any;
+    const uc = new CompleteRegistrationUseCase(flowStore, dataSource, correlationIdService, configService);
+
+    await expect(uc.execute({ flowId: 'flow-1' })).rejects.toMatchObject({
+      errorCode: 'VALIDATION.INVALID_INPUT',
+    });
   });
 });

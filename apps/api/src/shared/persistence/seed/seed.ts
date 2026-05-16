@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import { configuration } from '../../../config/configuration';
 import { ScryptPasswordHasher } from '../../../modules/auth/infrastructure/adapters/scrypt-password-hasher';
 import dataSource from '../typeorm.datasource';
+import { seedGeography } from './seed-geography';
 
 function json(value: unknown): string {
   return JSON.stringify(value);
@@ -13,6 +14,8 @@ async function main(): Promise<void> {
 
   await dataSource.initialize();
   try {
+    await seedGeography(dataSource);
+
     // Site config (id fijo)
     await dataSource.query(
       `
@@ -68,9 +71,9 @@ async function main(): Promise<void> {
       `
       INSERT INTO users (
         id, full_name, email, phone_number, password_hash, roles, status,
-        email_verified, phone_verified, country_code, city, area
+        email_verified, phone_verified, country_code, city, municipality, area
       )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
       ON CONFLICT (email) DO UPDATE SET
         id = EXCLUDED.id,
         full_name = EXCLUDED.full_name,
@@ -82,6 +85,7 @@ async function main(): Promise<void> {
         phone_verified = EXCLUDED.phone_verified,
         country_code = EXCLUDED.country_code,
         city = EXCLUDED.city,
+        municipality = EXCLUDED.municipality,
         area = EXCLUDED.area
     `,
       [
@@ -94,9 +98,10 @@ async function main(): Promise<void> {
         'ACTIVE',
         true,
         true,
-        'ES',
-        'Madrid',
-        'Centro',
+        'CO',
+        'Bogotá D.C.',
+        'Bogotá',
+        'Chapinero',
       ],
     );
 

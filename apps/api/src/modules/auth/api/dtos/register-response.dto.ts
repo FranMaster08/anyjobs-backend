@@ -12,5 +12,11 @@ export class RegisterResponseDto {
 
   @ApiProperty({ example: 'VERIFY', enum: ['ACCOUNT', 'VERIFY', 'LOCATION', 'ROLE_PROFILE', 'PERSONAL_INFO', 'DONE'] })
   nextStage!: 'ACCOUNT' | 'VERIFY' | 'LOCATION' | 'ROLE_PROFILE' | 'PERSONAL_INFO' | 'DONE';
+
+  @ApiProperty({
+    example: false,
+    description: 'True si se reanudó un draft de registro existente en lugar de crear uno nuevo',
+  })
+  resumed!: boolean;
 }
 

@@ -24,7 +24,9 @@ import {
   PhoneAvailableResponseDto,
   RegisterRequestDto,
   RegisterResponseDto,
+  RegistrationStatusResponseDto,
   VerifyOtpRequestDto,
+  CompleteOnboardingRegistrationRequestDto,
 } from '../dtos';
 import { RegisterUseCase } from '../../application/use-cases/register.use-case';
 import { VerifyEmailOtpUseCase } from '../../application/use-cases/verify-email-otp.use-case';
@@ -37,6 +39,9 @@ import { UpdateRegistrationWorkerProfileUseCase } from '../../application/use-ca
 import { UpdateRegistrationClientProfileUseCase } from '../../application/use-cases/update-registration-client-profile.use-case';
 import { UpdateRegistrationPersonalInfoUseCase } from '../../application/use-cases/update-registration-personal-info.use-case';
 import { CompleteRegistrationUseCase } from '../../application/use-cases/complete-registration.use-case';
+import { CompleteOnboardingRegistrationUseCase } from '../../application/use-cases/complete-onboarding-registration.use-case';
+import { GetRegistrationStatusUseCase } from '../../application/use-cases/get-registration-status.use-case';
+import { GetLocationCatalogUseCase } from '../../application/use-cases/get-location-catalog.use-case';
 import {
   UpdateClientProfileRequestDto,
   UpdateLocationRequestDto,
@@ -72,6 +77,9 @@ export class AuthController {
     private readonly updateRegistrationClientProfileUseCase: UpdateRegistrationClientProfileUseCase,
     private readonly updateRegistrationPersonalInfoUseCase: UpdateRegistrationPersonalInfoUseCase,
     private readonly completeRegistrationUseCase: CompleteRegistrationUseCase,
+    private readonly completeOnboardingRegistrationUseCase: CompleteOnboardingRegistrationUseCase,
+    private readonly getRegistrationStatusUseCase: GetRegistrationStatusUseCase,
+    private readonly getLocationCatalogUseCase: GetLocationCatalogUseCase,
     correlationIdService: CorrelationIdService,
     private readonly configService: ConfigService,
   ) {
@@ -85,10 +93,15 @@ export class AuthController {
   @Post('register')
   async register(
     @Body() body: RegisterRequestDto,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<RegisterResponseDto> {
     this.logger.log('Register request received');
-    const result = await this.registerUseCase.execute(body);
+    const resumeFlowId = getCookieValue(req.headers.cookie, REG_FLOW_COOKIE);
+    const result = await this.registerUseCase.execute({
+      ...body,
+      resumeFlowId: resumeFlowId ?? undefined,
+    });
 
     const isProd = (this.configService.get<string>('app.nodeEnv') ?? 'development') === 'production';
     res.cookie(REG_FLOW_COOKIE, encodeURIComponent(result.flowId), {
@@ -104,7 +117,19 @@ export class AuthController {
       emailVerificationRequired: result.emailVerificationRequired,
       phoneVerificationRequired: result.phoneVerificationRequired,
       nextStage: result.nextStage,
+      resumed: result.resumed,
     };
+  }
+
+  @Public()
+  @HttpCode(200)
+  @Get('registration/status')
+  async registrationStatus(@Req() req: Request): Promise<RegistrationStatusResponseDto> {
+    const flowId = getCookieValue(req.headers.cookie, REG_FLOW_COOKIE);
+    if (!flowId) {
+      return { active: false };
+    }
+    return this.getRegistrationStatusUseCase.execute({ flowId });
   }
 
   @Public()
@@ -179,6 +204,46 @@ export class AuthController {
     const flowId = getCookieValue(req.headers.cookie, REG_FLOW_COOKIE);
     if (!flowId) throw new UnauthorizedException();
     await this.completeRegistrationUseCase.execute({ flowId });
+  }
+
+  @Public()
+  @HttpCode(204)
+  @Post('register/complete')
+  async completeOnboardingRegistration(@Body() body: CompleteOnboardingRegistrationRequestDto): Promise<void> {
+    await this.completeOnboardingRegistrationUseCase.execute({
+      account: body.account,
+      emailVerified: body.emailVerified,
+      phoneVerified: body.phoneVerified,
+      location: body.location,
+      workerProfile: body.workerProfile,
+      preferredPaymentMethod: body.preferredPaymentMethod,
+      personalInfo: body.personalInfo,
+    });
+  }
+
+  @Public()
+  @Get('location-catalog')
+  async locationCatalog(
+    @Query('countryCode') countryCode?: string,
+    @Query('division') division?: string,
+  ) {
+    const code = countryCode?.trim().toUpperCase();
+    const divisionName = division?.trim();
+
+    if (code && divisionName) {
+      const municipalities = await this.getLocationCatalogUseCase.executeMunicipalitiesByDivision(
+        code,
+        divisionName,
+      );
+      return { countryCode: code, division: divisionName, municipalities };
+    }
+
+    if (code) {
+      const divisions = await this.getLocationCatalogUseCase.executeDivisionsByCountry(code);
+      return { countryCode: code, divisions };
+    }
+
+    return this.getLocationCatalogUseCase.execute();
   }
 
   @Public()

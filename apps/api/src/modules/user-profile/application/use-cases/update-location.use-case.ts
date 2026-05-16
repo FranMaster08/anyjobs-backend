@@ -7,6 +7,7 @@ import { UserProfilePolicy } from '../../domain';
 export interface UpdateLocationInput {
   userId: string;
   city: string;
+  municipality: string;
   area?: string;
   countryCode?: string;
   coverageRadiusKm?: number;

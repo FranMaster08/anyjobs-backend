@@ -80,9 +80,10 @@ describe('Proposals (e2e)', () => {
       .patch('/auth/registration/location')
       .set('Cookie', cookies)
       .send({
-        city: 'Madrid',
-        countryCode: 'ES',
-        area: 'Centro',
+        city: 'Bogotá D.C.',
+        municipality: 'Bogotá',
+        countryCode: 'CO',
+        area: 'Chapinero',
         coverageRadiusKm: 10,
       })
       .expect(204);
