@@ -14,10 +14,10 @@ import { UserReelEntity } from '../infrastructure/entities/user-reel.entity';
 import { LocalUserMediaStorageProvider } from '../infrastructure/adapters/local-user-media-storage.provider';
 import type { MediaAssetResponseDto } from '../api/dto/media-asset-response.dto';
 import {
-  USER_MEDIA_ALLOWED_MIMES,
   USER_MEDIA_MAX_BYTES,
   mediaKindFromMime,
 } from './user-media-constants';
+import { resolveUploadMimeType } from './resolve-upload-mime';
 
 export interface UploadMediaInput {
   ownerUserId: string;
@@ -41,18 +41,18 @@ export class UserMediaAssetsService {
   ) {}
 
   async upload(input: UploadMediaInput): Promise<MediaAssetResponseDto> {
-    this.validateUpload(input);
+    const mimeType = this.validateUpload(input);
     const saved = await this.storage.save({
       bytes: input.bytes,
-      mimeType: input.mimeType,
+      mimeType,
       originalName: input.originalName,
     });
 
     const entity = this.assetsRepo.create({
       ownerUserId: input.ownerUserId,
       storageKey: saved.storageKey,
-      mimeType: input.mimeType,
-      mediaKind: mediaKindFromMime(input.mimeType),
+      mimeType,
+      mediaKind: mediaKindFromMime(mimeType),
       status: 'ready',
       fileSizeBytes: input.bytes.length,
       width: input.width ?? null,
@@ -85,16 +85,23 @@ export class UserMediaAssetsService {
     return this.toDto(asset);
   }
 
-  private validateUpload(input: UploadMediaInput): void {
-    if (!USER_MEDIA_ALLOWED_MIMES.has(input.mimeType)) {
-      throw new BadRequestException(`MIME type not allowed: ${input.mimeType}`);
-    }
-    if (input.bytes.length > USER_MEDIA_MAX_BYTES) {
-      throw new BadRequestException('File exceeds maximum size (50 MB)');
-    }
+  private validateUpload(input: UploadMediaInput): string {
     if (input.bytes.length === 0) {
       throw new BadRequestException('Empty file');
     }
+    if (input.bytes.length > USER_MEDIA_MAX_BYTES) {
+      const sizeMb = (input.bytes.length / (1024 * 1024)).toFixed(2);
+      throw new BadRequestException(
+        `File exceeds maximum size (50 MB). Received ${sizeMb} MB (${input.bytes.length} bytes).`,
+      );
+    }
+    const mimeType = resolveUploadMimeType(input.mimeType, input.originalName);
+    if (!mimeType) {
+      throw new BadRequestException(
+        `MIME type not allowed: ${input.mimeType || 'unknown'}. Use MP4, WebM, MOV or JPG/PNG/WebP.`,
+      );
+    }
+    return mimeType;
   }
 
   private toDto(entity: MediaAssetEntity): MediaAssetResponseDto {

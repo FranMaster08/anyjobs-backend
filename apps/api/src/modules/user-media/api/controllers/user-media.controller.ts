@@ -16,13 +16,17 @@ import type { Request } from 'express';
 import { memoryStorage } from 'multer';
 import { RequirePermissions } from '../../../../shared/security/require-permissions.decorator';
 import { UserMediaAssetsService } from '../../application/user-media-assets.service';
+import { USER_MEDIA_MAX_BYTES } from '../../application/user-media-constants';
 import { MediaAssetResponseDto } from '../dto/media-asset-response.dto';
 
 type AuthedUser = { userId: string };
 type AuthedRequest = Request & { user: AuthedUser };
 type UploadedFilePayload = { buffer: Buffer; mimetype: string; originalname: string };
 
-const uploadOptions = { storage: memoryStorage() };
+const uploadOptions = {
+  storage: memoryStorage(),
+  limits: { fileSize: USER_MEDIA_MAX_BYTES },
+};
 
 @ApiTags('User Media')
 @Controller('user-media')
