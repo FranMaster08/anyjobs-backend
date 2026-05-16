@@ -120,6 +120,11 @@ jobs:
             if [ -n "${DEPLOY_ROOT:-}" ]; then
               export ANYJOBS_DEPLOY_ROOT="$DEPLOY_ROOT"
             else
-              unset ANYJOBS_DEPLOY_ROOT
+              FOUND_ENV=$(find "$HOME" /opt/anyjobs -maxdepth 5 -name '.env' 2>/dev/null | head -1)
+              if [ -n "$FOUND_ENV" ]; then
+                export ANYJOBS_DEPLOY_ROOT="$(dirname "$FOUND_ENV")"
+              else
+                unset ANYJOBS_DEPLOY_ROOT
+              fi
             fi
             bash "$SCRIPT" --env production --service anyjobs-back --image "$IMAGE"
