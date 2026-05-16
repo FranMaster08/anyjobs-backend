@@ -79,6 +79,66 @@ describe('Open Requests (e2e)', () => {
     await app.close();
   });
 
+  it('GET /open-requests?sort=relevance boosts higher-engagement request', async () => {
+    const dateRes = await request(app.getHttpServer())
+      .get('/open-requests')
+      .query({ page: 1, pageSize: 2, sort: 'date' })
+      .expect(200);
+
+    const items = dateRes.body.items as Array<{ id: string }>;
+    expect(items.length).toBeGreaterThanOrEqual(2);
+
+    const [newer, older] = items;
+    const boostId = older.id;
+    const anonId = 'anon-ranking-e2e';
+
+    for (let i = 0; i < 6; i++) {
+      await request(app.getHttpServer())
+        .post('/open-requests/interactions')
+        .send({
+          kind: 'requestListImpression',
+          openRequestId: boostId,
+          subjectType: 'anonymous',
+          anonymousId: anonId,
+          emittedAt: new Date().toISOString(),
+        })
+        .expect(204);
+    }
+
+    for (let i = 0; i < 8; i++) {
+      await request(app.getHttpServer())
+        .post('/open-requests/interactions')
+        .send({
+          kind: 'requestCardClick',
+          openRequestId: boostId,
+          subjectType: 'anonymous',
+          anonymousId: anonId,
+          emittedAt: new Date().toISOString(),
+        })
+        .expect(204);
+    }
+
+    await request(app.getHttpServer())
+      .post('/open-requests/interactions')
+      .send({
+        kind: 'requestDetailView',
+        openRequestId: boostId,
+        subjectType: 'anonymous',
+        anonymousId: anonId,
+        emittedAt: new Date().toISOString(),
+      })
+      .expect(204);
+
+    const relRes = await request(app.getHttpServer())
+      .get('/open-requests')
+      .query({ page: 1, pageSize: 2, sort: 'relevance' })
+      .expect(200);
+
+    const ranked = relRes.body.items as Array<{ id: string }>;
+    expect(ranked[0]?.id).toBe(boostId);
+    expect(ranked.map((x) => x.id)).toContain(newer.id);
+  });
+
   it('GET /open-requests returns paginated list (items+meta) and compat fields', async () => {
     const res = await request(app.getHttpServer())
       .get('/open-requests')

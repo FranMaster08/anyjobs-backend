@@ -16,7 +16,8 @@ El sistema MUST exponer `GET /open-requests` con query params:
 
 - `page: number` (min 1)
 - `pageSize: number` (min 1; el front usa 12)
-- `sort?: string` (opcional; valor esperado `publishedAtDesc`)
+- `sort?: string` (opcional; `relevance`, `date` o `publishedAtDesc`; default interno `publishedAtDesc`)
+- `anonymousId?: string` (opcional; personalización para visitantes con `sort=relevance`)
 
 El sistema MUST responder `200` con JSON:
 
@@ -37,6 +38,14 @@ El sistema MUST responder `200` con JSON:
 #### Scenario: List returns paginated structure
 - **WHEN** el cliente llama `GET /open-requests?page=1&pageSize=12`
 - **THEN** el sistema responde `200` con `items` array, `hasMore` boolean y `nextPage` number o null
+
+#### Scenario: List by relevance
+- **WHEN** el cliente llama `GET /open-requests?sort=relevance&page=1&pageSize=12`
+- **THEN** el sistema responde `200` con items ordenados por score de relevancia descendente
+
+#### Scenario: List by date explicit
+- **WHEN** el cliente llama `GET /open-requests?sort=date`
+- **THEN** el orden coincide con `publishedAtDesc` por `publishedAtSort` descendente
 
 ### Requirement: Get open request detail by id
 El sistema MUST exponer `GET /open-requests/{id}` y responder `200` con JSON que incluya al menos:

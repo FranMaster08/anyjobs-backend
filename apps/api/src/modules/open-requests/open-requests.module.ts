@@ -12,7 +12,10 @@ import { OpenRequestEntity } from './infrastructure/entities/open-request.entity
 import { OpenRequestImageEntity } from './infrastructure/entities/open-request-image.entity';
 import { OpenRequestInteractionEntity } from './infrastructure/entities/open-request-interaction.entity';
 import { OpenRequestsInteractionsService } from './application/open-requests-interactions.service';
+import { OpenRequestsEngagementMetricsService } from './application/open-requests-engagement-metrics.service';
+import { OpenRequestsRankingService } from './application/open-requests-ranking.service';
 import { TypeOrmOpenRequestsRepository } from './infrastructure/adapters/typeorm-open-requests.repository';
+import { ProposalEntity } from '../proposals/infrastructure/entities/proposal.entity';
 import { IMAGE_STORAGE_PROVIDER } from './application/ports/tokens';
 import { LocalImageStorageProvider } from './infrastructure/adapters/local-image-storage.provider';
 
@@ -22,6 +25,7 @@ import { LocalImageStorageProvider } from './infrastructure/adapters/local-image
       OpenRequestEntity,
       OpenRequestImageEntity,
       OpenRequestInteractionEntity,
+      ProposalEntity,
     ]),
   ],
   controllers: [OpenRequestsController],
@@ -33,6 +37,8 @@ import { LocalImageStorageProvider } from './infrastructure/adapters/local-image
     UpdateOpenRequestUseCase,
     DeleteOpenRequestUseCase,
     OpenRequestsInteractionsService,
+    OpenRequestsEngagementMetricsService,
+    OpenRequestsRankingService,
     { provide: OPEN_REQUESTS_REPOSITORY, useClass: TypeOrmOpenRequestsRepository },
     { provide: IMAGE_STORAGE_PROVIDER, useClass: LocalImageStorageProvider },
   ],

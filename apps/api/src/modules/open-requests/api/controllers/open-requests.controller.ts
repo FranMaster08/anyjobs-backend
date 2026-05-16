@@ -45,6 +45,7 @@ import { patchDtoToRecord } from '../mappers/patch-open-request.mapper';
 
 type AuthedUser = { userId: string };
 type AuthedRequest = Request & { user: AuthedUser };
+type PublicListRequest = Request & { user?: AuthedUser };
 type UploadedFile = { buffer: Buffer; mimetype: string; originalname: string };
 const uploadInterceptorOptions = { storage: memoryStorage() };
 
@@ -68,11 +69,18 @@ export class OpenRequestsController {
     @Query('page') page?: string,
     @Query('pageSize') pageSize?: string,
     @Query('sort') sort?: string,
+    @Query('anonymousId') anonymousId?: string,
+    @Req() req?: PublicListRequest,
   ): Promise<OpenRequestsListResponseDto> {
+    const userId = req?.user?.userId ?? this.userIdFromHeader(req);
     const res = await this.listUseCase.execute({
       page: page ? Number(page) : undefined,
       pageSize: pageSize ? Number(pageSize) : undefined,
       sort,
+      actor: {
+        userId: userId ?? null,
+        anonymousId: anonymousId ?? null,
+      },
     });
     return res as unknown as OpenRequestsListResponseDto;
   }
@@ -159,5 +167,11 @@ export class OpenRequestsController {
   @Delete(':id')
   async remove(@Req() req: AuthedRequest, @Param('id') id: string): Promise<void> {
     await this.deleteUseCase.execute({ id, userId: req.user.userId });
+  }
+
+  private userIdFromHeader(req?: Request): string | null {
+    const raw = req?.headers['x-user-id'];
+    if (typeof raw === 'string' && raw.length > 0) return raw;
+    return null;
   }
 }
