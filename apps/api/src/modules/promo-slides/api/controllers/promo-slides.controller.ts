@@ -1,51 +1,79 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Logger, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Query,
+  Req,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import type { Request } from 'express';
 import { Public } from '../../../../shared/security/public.decorator';
+import { RequirePermissions } from '../../../../shared/security/require-permissions.decorator';
+import { PromoCampaignMetricsService } from '../../application/promo-campaign-metrics.service';
+import { PromoFeedRankingService } from '../../application/promo-feed-ranking.service';
+import { PromoSlidesInteractionsService } from '../../application/promo-slides-interactions.service';
+import { TrackPromoInteractionDto } from '../dto/track-promo-interaction.dto';
 
-/** Contrato alineado con `SlideData` de ngx-vertical-slider + `id` de campaña (sin persistencia en MVP). */
-const PROMO_SLIDES = [
-  {
-    id: 'camp-promo-1',
-    type: 'image' as const,
-    media: 'https://picsum.photos/720/1280',
-    user: '@Anyjobs',
-    avatar: 'https://i.pravatar.cc/100?img=12',
-    caption: 'Descubre oportunidades cerca de ti.',
-    music: 'sonido original',
-    counts: { like: '1.2K', comment: '48', bookmark: '12' },
-  },
-  {
-    id: 'camp-promo-2',
-    type: 'video' as const,
-    media: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
-    poster: 'https://picsum.photos/seed/promo2/720/1280',
-    user: '@Anyjobs',
-    avatar: 'https://i.pravatar.cc/100?img=45',
-    caption: 'Publicidad — vídeo de ejemplo (mute por defecto).',
-    music: 'pista promocional',
-    counts: { like: '890' },
-  },
-];
+interface RequestWithUser extends Request {
+  user?: { userId?: string };
+}
 
 @ApiTags('Promo Slides')
 @Controller('promo-slides')
 export class PromoSlidesController {
-  private readonly logger = new Logger(PromoSlidesController.name);
+  constructor(
+    private readonly interactions: PromoSlidesInteractionsService,
+    private readonly metrics: PromoCampaignMetricsService,
+    private readonly feed: PromoFeedRankingService,
+  ) {}
 
   @Public()
   @Get()
-  list(): typeof PROMO_SLIDES {
-    return PROMO_SLIDES;
+  async list(
+    @Query('anonymousId') anonymousId?: string,
+    @Req() req?: RequestWithUser,
+  ): Promise<unknown[]> {
+    const userId = req?.user?.userId ?? this.userIdFromHeader(req);
+    return this.feed.listRankedSlides({
+      userId: userId ?? null,
+      anonymousId: anonymousId ?? null,
+    });
   }
 
-  /**
-   * Telemetría / acciones: cuerpo incluye `subjectType`, `userId` o `anonymousId`, `sliderId`, `slide`…
-   * Con sesión, el front envía `Authorization: Bearer` (mismo patrón que otras APIs vía proxy).
-   */
   @Public()
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post('interactions')
-  trackInteraction(@Body() body: Record<string, unknown>): void {
-    this.logger.log(`interaction ${JSON.stringify(body)}`);
+  async trackInteraction(@Body() body: TrackPromoInteractionDto): Promise<void> {
+    await this.interactions.track(body);
+  }
+
+  @RequirePermissions('promo-slides.metrics.read')
+  @Get('metrics')
+  async listMetrics(@Query('windowDays') windowDays?: string) {
+    const days = windowDays ? Number.parseInt(windowDays, 10) : undefined;
+    return this.metrics.listMetrics(Number.isFinite(days) ? days : undefined);
+  }
+
+  @RequirePermissions('promo-slides.metrics.read')
+  @Get('metrics/:campaignId')
+  async campaignMetrics(
+    @Param('campaignId') campaignId: string,
+    @Query('windowDays') windowDays?: string,
+  ) {
+    const days = windowDays ? Number.parseInt(windowDays, 10) : undefined;
+    return this.metrics.getMetricsForCampaign(
+      campaignId,
+      Number.isFinite(days) ? days : undefined,
+    );
+  }
+
+  private userIdFromHeader(req?: Request): string | null {
+    const raw = req?.headers['x-user-id'];
+    if (typeof raw === 'string' && raw.length > 0) return raw;
+    return null;
   }
 }
