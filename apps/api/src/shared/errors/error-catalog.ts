@@ -87,6 +87,13 @@ export const ErrorCatalog = {
     defaultTechnicalMessage: 'Only the open request owner may list proposals by requestId.',
     severity: 'warn',
   },
+  'NOTIFICATION.NOT_FOUND': {
+    errorCode: 'NOTIFICATION.NOT_FOUND',
+    httpStatus: 404,
+    defaultClientMessage: 'Notificación no encontrada.',
+    defaultTechnicalMessage: 'Notification not found for recipient.',
+    severity: 'warn',
+  },
 } as const satisfies Record<string, ErrorCatalogEntry>;
 
 export type KnownErrorCode = keyof typeof ErrorCatalog;

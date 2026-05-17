@@ -9,6 +9,7 @@ import { SiteConfigModule } from './modules/site-config/site-config.module';
 import { ProposalsModule } from './modules/proposals/proposals.module';
 import { PromoSlidesModule } from './modules/promo-slides/promo-slides.module';
 import { UserMediaModule } from './modules/user-media/user-media.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { CorrelationIdMiddleware } from './shared/correlation/correlation-id.middleware';
 import { CorrelationModule } from './shared/correlation/correlation.module';
 import { GlobalExceptionFilter } from './shared/errors/global-exception.filter';
@@ -30,6 +31,7 @@ import { PersistenceModule } from './shared/persistence/persistence.module';
     ProposalsModule,
     PromoSlidesModule,
     UserMediaModule,
+    NotificationsModule,
   ],
   providers: [
     {

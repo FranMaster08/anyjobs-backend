@@ -6,6 +6,7 @@ import { PROPOSALS_REPOSITORY } from '../ports';
 import type { ProposalsRepositoryPort } from '../ports';
 import type { Proposal } from '../../domain';
 import { ProposalFactory } from '../../domain';
+import { NotificationDispatchService } from '../../../notifications/application/services/notification-dispatch.service';
 
 export interface CreateProposalInput {
   requestId: string;
@@ -22,6 +23,7 @@ export class CreateProposalUseCase {
   constructor(
     @Inject(PROPOSALS_REPOSITORY) private readonly proposalsRepo: ProposalsRepositoryPort,
     @Inject(OPEN_REQUESTS_REPOSITORY) private readonly openRequestsRepo: OpenRequestsRepositoryPort,
+    private readonly notificationDispatch: NotificationDispatchService,
   ) {}
 
   async execute(input: CreateProposalInput): Promise<Proposal> {
@@ -42,6 +44,13 @@ export class CreateProposalUseCase {
     }
 
     const newProposal = ProposalFactory.createNew(input, new Date().toISOString());
-    return this.proposalsRepo.create(newProposal);
+    const created = await this.proposalsRepo.create(newProposal);
+    await this.notificationDispatch.notifyProposalReceived({
+      recipientId: ownerUserId,
+      actorUserId: input.userId,
+      requestId: input.requestId,
+      proposalId: created.id,
+    });
+    return created;
   }
 }
