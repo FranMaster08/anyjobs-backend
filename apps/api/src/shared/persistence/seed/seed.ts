@@ -191,6 +191,21 @@ async function main(): Promise<void> {
       ],
     );
 
+    // Filas creadas por migraciones iniciales (ON CONFLICT DO NOTHING no actualiza owner).
+    await dataSource.query(
+      `
+      UPDATE open_requests
+      SET owner_user_id = $1
+      WHERE id IN ($2, $3, $4) AND owner_user_id IS NULL
+    `,
+      [
+        demoUserId,
+        '00000000-0000-0000-0000-000000000101',
+        '00000000-0000-0000-0000-000000000102',
+        '00000000-0000-0000-0000-000000000103',
+      ],
+    );
+
     // Postulación (solicitud para postular) con 5 fotos (galería)
     await dataSource.query(
       `

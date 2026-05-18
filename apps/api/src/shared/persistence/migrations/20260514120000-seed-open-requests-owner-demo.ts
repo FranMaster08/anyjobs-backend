@@ -15,6 +15,15 @@ export class SeedOpenRequestsOwnerDemo20260514120000 implements MigrationInterfa
 
   async up(queryRunner: QueryRunner): Promise<void> {
     const driver = queryRunner.connection.driver.options.type;
+    const userExists =
+      driver === 'postgres'
+        ? await queryRunner.query(`SELECT 1 FROM users WHERE id = $1 LIMIT 1`, [DEMO_USER_ID])
+        : await queryRunner.query(`SELECT 1 FROM users WHERE id = ? LIMIT 1`, [DEMO_USER_ID]);
+    if (!userExists?.length) {
+      // En Docker local el seed crea el usuario demo después de migration:run.
+      return;
+    }
+
     for (const id of OPEN_REQUEST_IDS) {
       if (driver === 'postgres') {
         await queryRunner.query(
