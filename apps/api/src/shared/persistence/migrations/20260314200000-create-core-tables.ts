@@ -2,6 +2,7 @@ import { MigrationInterface, QueryRunner, Table, TableForeignKey, TableIndex } f
 
 const DELETED_AT_COLUMN_TYPE =
   (process.env.DB_TYPE ?? '').toLowerCase() === 'postgres' ? 'timestamp' : 'datetime';
+const LAT_LNG_TYPE = (process.env.DB_TYPE ?? '').toLowerCase() === 'postgres' ? 'double precision' : 'real';
 
 export class CreateCoreTables20260314200000 implements MigrationInterface {
   name = 'CreateCoreTables20260314200000';
@@ -144,6 +145,8 @@ export class CreateCoreTables20260314200000 implements MigrationInterface {
           { name: 'description', type: 'text' },
           { name: 'tags', type: 'varchar' },
           { name: 'location_label', type: 'varchar', length: '200' },
+          { name: 'location_lat', type: LAT_LNG_TYPE, isNullable: true },
+          { name: 'location_lng', type: LAT_LNG_TYPE, isNullable: true },
           { name: 'published_at_label', type: 'varchar', length: '64' },
           { name: 'published_at_sort', type: 'bigint' },
           { name: 'budget_label', type: 'varchar', length: '64' },
@@ -228,6 +231,8 @@ export class CreateCoreTables20260314200000 implements MigrationInterface {
         description: 'Busco una persona para una limpieza profunda de un piso de 70m2.',
         tags: 'Limpieza',
         locationLabel: 'Barcelona · Eixample',
+        locationLat: 41.3874,
+        locationLng: 2.1686,
         publishedAtLabel: 'Hace 2 días',
         publishedAtSort: String(now - 0),
         budgetLabel: '€60',
@@ -248,6 +253,8 @@ export class CreateCoreTables20260314200000 implements MigrationInterface {
         description: 'Montaje de un armario IKEA, se requiere experiencia.',
         tags: 'Montaje',
         locationLabel: 'Madrid · Centro',
+        locationLat: 40.4168,
+        locationLng: -3.7038,
         publishedAtLabel: 'Hace 5 días',
         publishedAtSort: String(now - 1000 * 60 * 60 * 24),
         budgetLabel: '€40',
