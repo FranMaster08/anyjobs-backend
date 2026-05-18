@@ -16,6 +16,8 @@ export type CreateOpenRequestInput = {
   description: string;
   tags: string[];
   locationLabel: string;
+  locationLat?: number;
+  locationLng?: number;
   budgetLabel: string;
   contactPhone: string;
   contactEmail: string;
@@ -92,6 +94,8 @@ export class CreateOpenRequestUseCase {
         description: input.description,
         tags: input.tags,
         locationLabel: input.locationLabel,
+        locationLat: input.locationLat,
+        locationLng: input.locationLng,
         publishedAtLabel,
         publishedAtSort,
         budgetLabel: input.budgetLabel,

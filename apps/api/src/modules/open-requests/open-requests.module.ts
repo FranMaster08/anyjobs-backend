@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { OpenRequestsController } from './api/controllers/open-requests.controller';
 import { ListOpenRequestsUseCase } from './application/use-cases/list-open-requests.use-case';
+import { ListNearbyOpenRequestsUseCase } from './application/use-cases/list-nearby-open-requests.use-case';
 import { ListMyOpenRequestsUseCase } from './application/use-cases/list-my-open-requests.use-case';
 import { GetOpenRequestDetailUseCase } from './application/use-cases/get-open-request-detail.use-case';
 import { CreateOpenRequestUseCase } from './application/use-cases/create-open-request.use-case';
@@ -31,6 +32,7 @@ import { LocalImageStorageProvider } from './infrastructure/adapters/local-image
   controllers: [OpenRequestsController],
   providers: [
     ListOpenRequestsUseCase,
+    ListNearbyOpenRequestsUseCase,
     ListMyOpenRequestsUseCase,
     GetOpenRequestDetailUseCase,
     CreateOpenRequestUseCase,

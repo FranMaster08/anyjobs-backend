@@ -24,6 +24,12 @@ export class OpenRequestEntity {
   @Column({ name: 'location_label', type: 'varchar', length: 200 })
   locationLabel!: string;
 
+  @Column({ name: 'location_lat', type: 'float', nullable: true })
+  locationLat!: number | null;
+
+  @Column({ name: 'location_lng', type: 'float', nullable: true })
+  locationLng!: number | null;
+
   @Column({ name: 'published_at_label', type: 'varchar', length: 64 })
   publishedAtLabel!: string;
 

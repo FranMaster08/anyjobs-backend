@@ -23,9 +23,17 @@ export interface OpenRequestListItem {
   excerpt: string;
   tags: string[];
   locationLabel: string;
+  locationLat?: number;
+  locationLng?: number;
   publishedAtLabel: string;
   budgetLabel: string;
   publishedAtSort: number;
+}
+
+export interface NearbyOpenRequestItem extends OpenRequestListItem {
+  locationLat: number;
+  locationLng: number;
+  distanceKm: number;
 }
 
 export interface OpenRequestDetail {

@@ -9,6 +9,8 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Max,
+  Min,
   ValidateNested,
 } from 'class-validator';
 import { ImageDto } from './image.dto';
@@ -55,6 +57,20 @@ export class CreateOpenRequestDto {
   @IsString()
   @IsNotEmpty()
   locationLabel!: string;
+
+  @ApiPropertyOptional({ example: 41.3874 })
+  @IsOptional()
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  locationLat?: number;
+
+  @ApiPropertyOptional({ example: 2.1686 })
+  @IsOptional()
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  locationLng?: number;
 
   @ApiProperty({ example: '€60' })
   @IsString()

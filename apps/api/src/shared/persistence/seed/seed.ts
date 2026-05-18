@@ -111,14 +111,15 @@ async function main(): Promise<void> {
     await dataSource.query(
       `
       INSERT INTO open_requests (
-        id, title, excerpt, description, tags, location_label, published_at_label, published_at_sort,
+        id, title, excerpt, description, tags, location_label, location_lat, location_lng,
+        published_at_label, published_at_sort,
         budget_label, image_url, image_alt, provider, reputation, reviews_count, provider_reviews,
         contact_phone, contact_email, images, owner_user_id
       )
       VALUES
-        ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19),
-        ($20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38),
-        ($39,$40,$41,$42,$43,$44,$45,$46,$47,$48,$49,$50,$51,$52,$53,$54,$55,$56,$57)
+        ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21),
+        ($22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41,$42),
+        ($43,$44,$45,$46,$47,$48,$49,$50,$51,$52,$53,$54,$55,$56,$57,$58,$59,$60,$61,$62,$63)
       ON CONFLICT (id) DO NOTHING
     `,
       [
@@ -128,6 +129,8 @@ async function main(): Promise<void> {
         'Busco una persona para una limpieza profunda de un piso de 70m2.',
         'Limpieza',
         'Barcelona · Eixample',
+        41.3874,
+        2.1686,
         'Hace 2 días',
         now,
         '€60',
@@ -148,6 +151,8 @@ async function main(): Promise<void> {
         'Montaje de un armario IKEA, se requiere experiencia.',
         'Montaje',
         'Madrid · Centro',
+        40.4168,
+        -3.7038,
         'Hace 5 días',
         now - 1000 * 60 * 60 * 24,
         '€40',
@@ -168,6 +173,8 @@ async function main(): Promise<void> {
         'Pintura de una habitación pequeña (10m2), pintura blanca. Yo pongo materiales.',
         'Pintura,Manitas',
         'Valencia · Ruzafa',
+        39.4699,
+        -0.3763,
         'Hace 1 día',
         now - 1000 * 60 * 60 * 6,
         '€90',

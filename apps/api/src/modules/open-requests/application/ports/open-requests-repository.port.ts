@@ -1,6 +1,13 @@
 import type { PageRequest } from '../../../../shared/application/pagination/page-request';
 import type { PageResult } from '../../../../shared/application/pagination/page-result';
-import type { OpenRequestDetail, OpenRequestListItem } from '../../domain/open-request';
+import type { NearbyOpenRequestItem, OpenRequestDetail, OpenRequestListItem } from '../../domain/open-request';
+
+export interface ListNearbyOpenRequestsInput {
+  lat: number;
+  lng: number;
+  limit?: number;
+  radiusKm?: number;
+}
 
 export interface CreateOpenRequestRecordInput {
   id: string;
@@ -10,6 +17,8 @@ export interface CreateOpenRequestRecordInput {
   description: string;
   tags: string[];
   locationLabel: string;
+  locationLat?: number | null;
+  locationLng?: number | null;
   publishedAtLabel: string;
   publishedAtSort: number;
   budgetLabel: string;
@@ -29,6 +38,7 @@ export type UpdateOpenRequestRecordPatch = Partial<
 >;
 
 export interface OpenRequestsRepositoryPort {
+  listNearby(input: ListNearbyOpenRequestsInput): Promise<NearbyOpenRequestItem[]>;
   list(pageRequest: PageRequest): Promise<PageResult<OpenRequestListItem>>;
   listByOwner(ownerUserId: string, pageRequest: PageRequest): Promise<PageResult<OpenRequestListItem>>;
   getById(id: string): Promise<OpenRequestDetail | null>;

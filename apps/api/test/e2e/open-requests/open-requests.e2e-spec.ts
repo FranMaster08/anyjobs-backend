@@ -139,6 +139,30 @@ describe('Open Requests (e2e)', () => {
     expect(ranked.map((x) => x.id)).toContain(newer.id);
   });
 
+  it('GET /open-requests/nearby returns items ordered by distance', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/open-requests/nearby')
+      .query({ lat: 41.3874, lng: 2.1686, limit: 100, radiusKm: 50 })
+      .expect(200);
+
+    const items = res.body.items as Array<{ id: string; distanceKm: number; locationLat: number }>;
+    expect(items.length).toBeGreaterThan(0);
+    expect(items[0]!.locationLat).toBeDefined();
+    for (let i = 1; i < items.length; i++) {
+      expect(items[i]!.distanceKm).toBeGreaterThanOrEqual(items[i - 1]!.distanceKm);
+    }
+    const barcelona = items.find((x) => x.id === '00000000-0000-0000-0000-000000000101');
+    expect(barcelona).toBeTruthy();
+    expect(barcelona!.distanceKm).toBeLessThan(5);
+  });
+
+  it('GET /open-requests/nearby rejects invalid coordinates', async () => {
+    await request(app.getHttpServer())
+      .get('/open-requests/nearby')
+      .query({ lat: 999, lng: 2.1686 })
+      .expect(400);
+  });
+
   it('GET /open-requests returns paginated list (items+meta) and compat fields', async () => {
     const res = await request(app.getHttpServer())
       .get('/open-requests')

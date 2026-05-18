@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class OpenRequestListItemDto {
   @ApiProperty({ example: 'req-1' })
@@ -18,6 +18,12 @@ export class OpenRequestListItemDto {
 
   @ApiProperty({ example: 'Barcelona · Eixample' })
   locationLabel!: string;
+
+  @ApiPropertyOptional({ example: 41.3874 })
+  locationLat?: number;
+
+  @ApiPropertyOptional({ example: 2.1686 })
+  locationLng?: number;
 
   @ApiProperty({ example: 'Hace 2 días' })
   publishedAtLabel!: string;

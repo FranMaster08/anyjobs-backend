@@ -5,12 +5,14 @@ import { Repository } from 'typeorm';
 import { buildPageMeta } from '../../../../shared/application/pagination/page-result';
 import type { PageRequest } from '../../../../shared/application/pagination/page-request';
 import type { PageResult } from '../../../../shared/application/pagination/page-result';
-import type { OpenRequestDetail, OpenRequestListItem } from '../../domain/open-request';
+import type { NearbyOpenRequestItem, OpenRequestDetail, OpenRequestListItem } from '../../domain/open-request';
 import type {
   CreateOpenRequestRecordInput,
+  ListNearbyOpenRequestsInput,
   OpenRequestsRepositoryPort,
   UpdateOpenRequestRecordPatch,
 } from '../../application/ports/open-requests-repository.port';
+import { haversineDistanceKmSql } from '../../application/open-requests-haversine';
 import { formatRelativePublishedAt } from '../../application/format-relative-published-at';
 import { OpenRequestEntity } from '../entities/open-request.entity';
 import { OpenRequestImageEntity } from '../entities/open-request-image.entity';
@@ -28,7 +30,7 @@ function parseJsonIfString<T>(value: unknown, fallback: T): T {
 
 function toListItem(e: OpenRequestEntity): OpenRequestListItem {
   const publishedAtSort = Number(e.publishedAtSort);
-  return {
+  const item: OpenRequestListItem = {
     id: e.id,
     imageUrl: e.imageUrl,
     imageAlt: e.imageAlt,
@@ -39,6 +41,11 @@ function toListItem(e: OpenRequestEntity): OpenRequestListItem {
     budgetLabel: e.budgetLabel,
     publishedAtSort,
   };
+  if (e.locationLat != null && e.locationLng != null) {
+    item.locationLat = e.locationLat;
+    item.locationLng = e.locationLng;
+  }
+  return item;
 }
 
 function toDetail(e: OpenRequestEntity): OpenRequestDetail {
@@ -100,6 +107,34 @@ export class TypeOrmOpenRequestsRepository implements OpenRequestsRepositoryPort
     @InjectRepository(OpenRequestImageEntity) private readonly imageRepo: Repository<OpenRequestImageEntity>,
   ) {}
 
+  async listNearby(input: ListNearbyOpenRequestsInput): Promise<NearbyOpenRequestItem[]> {
+    const limit = Math.min(100, Math.max(1, input.limit ?? 100));
+    const radiusKm = input.radiusKm ?? 50;
+    const distanceSql = haversineDistanceKmSql('r', ':lat', ':lng');
+
+    const { entities, raw } = await this.repo
+      .createQueryBuilder('r')
+      .addSelect(distanceSql, 'distance_km')
+      .where('r.locationLat IS NOT NULL')
+      .andWhere('r.locationLng IS NOT NULL')
+      .andWhere(`${distanceSql} <= :radiusKm`)
+      .orderBy('distance_km', 'ASC')
+      .take(limit)
+      .setParameters({ lat: input.lat, lng: input.lng, radiusKm })
+      .getRawAndEntities();
+
+    return entities.map((e, index) => {
+      const base = toListItem(e);
+      const distanceKm = Math.round(Number(raw[index]?.distance_km ?? 0) * 10) / 10;
+      return {
+        ...base,
+        locationLat: e.locationLat!,
+        locationLng: e.locationLng!,
+        distanceKm,
+      };
+    });
+  }
+
   async list(pageRequest: PageRequest): Promise<PageResult<OpenRequestListItem>> {
     const totalItems = await this.repo.count();
     const meta = buildPageMeta(totalItems, pageRequest.page, pageRequest.pageSize);
@@ -144,6 +179,8 @@ export class TypeOrmOpenRequestsRepository implements OpenRequestsRepositoryPort
       description: input.description,
       tags: input.tags,
       locationLabel: input.locationLabel,
+      locationLat: input.locationLat ?? null,
+      locationLng: input.locationLng ?? null,
       publishedAtLabel: input.publishedAtLabel,
       publishedAtSort: String(input.publishedAtSort),
       budgetLabel: input.budgetLabel,
@@ -170,6 +207,8 @@ export class TypeOrmOpenRequestsRepository implements OpenRequestsRepositoryPort
     if (patch.description !== undefined) e.description = patch.description;
     if (patch.tags !== undefined) e.tags = patch.tags;
     if (patch.locationLabel !== undefined) e.locationLabel = patch.locationLabel;
+    if (patch.locationLat !== undefined) e.locationLat = patch.locationLat;
+    if (patch.locationLng !== undefined) e.locationLng = patch.locationLng;
     if (patch.publishedAtLabel !== undefined) e.publishedAtLabel = patch.publishedAtLabel;
     if (patch.publishedAtSort !== undefined) e.publishedAtSort = String(patch.publishedAtSort);
     if (patch.budgetLabel !== undefined) e.budgetLabel = patch.budgetLabel;

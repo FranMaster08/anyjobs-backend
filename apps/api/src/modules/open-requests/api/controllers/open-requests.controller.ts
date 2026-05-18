@@ -20,6 +20,7 @@ import { memoryStorage } from 'multer';
 import { Public } from '../../../../shared/security/public.decorator';
 import { RequirePermissions } from '../../../../shared/security/require-permissions.decorator';
 import { ListOpenRequestsUseCase } from '../../application/use-cases/list-open-requests.use-case';
+import { ListNearbyOpenRequestsUseCase } from '../../application/use-cases/list-nearby-open-requests.use-case';
 import { ListMyOpenRequestsUseCase } from '../../application/use-cases/list-my-open-requests.use-case';
 import { GetOpenRequestDetailUseCase } from '../../application/use-cases/get-open-request-detail.use-case';
 import { CreateOpenRequestUseCase } from '../../application/use-cases/create-open-request.use-case';
@@ -30,6 +31,7 @@ import { TrackOpenRequestInteractionDto } from '../dto/track-open-request-intera
 import {
   CreateOpenRequestDto,
   OpenRequestDetailDto,
+  NearbyOpenRequestsListResponseDto,
   OpenRequestsListResponseDto,
   PatchOpenRequestDto,
 } from '../dtos';
@@ -37,6 +39,7 @@ import {
   DeleteOpenRequestSwagger,
   GetMyOpenRequestsListSwagger,
   GetOpenRequestDetailSwagger,
+  GetOpenRequestsNearbySwagger,
   GetOpenRequestsListSwagger,
   PatchOpenRequestSwagger,
   PostOpenRequestSwagger,
@@ -54,6 +57,7 @@ const uploadInterceptorOptions = { storage: memoryStorage() };
 export class OpenRequestsController {
   constructor(
     private readonly listUseCase: ListOpenRequestsUseCase,
+    private readonly listNearbyUseCase: ListNearbyOpenRequestsUseCase,
     private readonly listMineUseCase: ListMyOpenRequestsUseCase,
     private readonly detailUseCase: GetOpenRequestDetailUseCase,
     private readonly createUseCase: CreateOpenRequestUseCase,
@@ -128,6 +132,24 @@ export class OpenRequestsController {
       pageSize: pageSize ? Number(pageSize) : undefined,
     });
     return res as unknown as OpenRequestsListResponseDto;
+  }
+
+  @Public()
+  @GetOpenRequestsNearbySwagger()
+  @Get('nearby')
+  async nearby(
+    @Query('lat') lat?: string,
+    @Query('lng') lng?: string,
+    @Query('limit') limit?: string,
+    @Query('radiusKm') radiusKm?: string,
+  ): Promise<NearbyOpenRequestsListResponseDto> {
+    const res = await this.listNearbyUseCase.execute({
+      lat: lat != null ? Number(lat) : undefined,
+      lng: lng != null ? Number(lng) : undefined,
+      limit: limit != null ? Number(limit) : undefined,
+      radiusKm: radiusKm != null ? Number(radiusKm) : undefined,
+    });
+    return res as unknown as NearbyOpenRequestsListResponseDto;
   }
 
   @Public()

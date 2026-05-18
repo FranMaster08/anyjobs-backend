@@ -8,6 +8,8 @@ export function patchDtoToRecord(dto: PatchOpenRequestDto): UpdateOpenRequestRec
   if (dto.description !== undefined) p.description = dto.description;
   if (dto.tags !== undefined) p.tags = dto.tags;
   if (dto.locationLabel !== undefined) p.locationLabel = dto.locationLabel;
+  if (dto.locationLat !== undefined) p.locationLat = dto.locationLat;
+  if (dto.locationLng !== undefined) p.locationLng = dto.locationLng;
   if (dto.publishedAtLabel !== undefined) p.publishedAtLabel = dto.publishedAtLabel;
   if (dto.budgetLabel !== undefined) p.budgetLabel = dto.budgetLabel;
   if (dto.imageUrl !== undefined) p.imageUrl = dto.imageUrl;

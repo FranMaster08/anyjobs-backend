@@ -260,7 +260,7 @@ export class OpenRequestsRankingService {
 
   private toListItem(entity: OpenRequestEntity): OpenRequestListItem {
     const publishedAtSort = Number(entity.publishedAtSort);
-    return {
+    const item: OpenRequestListItem = {
       id: entity.id,
       imageUrl: entity.imageUrl,
       imageAlt: entity.imageAlt,
@@ -271,6 +271,11 @@ export class OpenRequestsRankingService {
       budgetLabel: entity.budgetLabel,
       publishedAtSort,
     };
+    if (entity.locationLat != null && entity.locationLng != null) {
+      item.locationLat = entity.locationLat;
+      item.locationLng = entity.locationLng;
+    }
+    return item;
   }
 }
 

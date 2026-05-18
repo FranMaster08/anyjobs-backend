@@ -2,10 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { buildPageMeta } from '../../../../shared/application/pagination/page-result';
 import type { PageRequest } from '../../../../shared/application/pagination/page-request';
 import type { PageResult } from '../../../../shared/application/pagination/page-result';
-import type { OpenRequestDetail, OpenRequestListItem } from '../../domain/open-request';
+import type { NearbyOpenRequestItem, OpenRequestDetail, OpenRequestListItem } from '../../domain/open-request';
 import { formatRelativePublishedAt } from '../../application/format-relative-published-at';
+import { haversineDistanceKm } from '../../application/open-requests-haversine';
 import type {
   CreateOpenRequestRecordInput,
+  ListNearbyOpenRequestsInput,
   OpenRequestsRepositoryPort,
   UpdateOpenRequestRecordPatch,
 } from '../../application/ports/open-requests-repository.port';
@@ -75,6 +77,34 @@ export class InMemoryOpenRequestsRepository implements OpenRequestsRepositoryPor
     Array<{ ownerUserId: string; url: string; alt: string; storageKey: string | null }>
   >();
   private readonly deleted = new Set<string>();
+  private readonly coordsById = new Map<string, { lat: number; lng: number }>([
+    ['req-1', { lat: 41.3874, lng: 2.1686 }],
+    ['req-2', { lat: 40.4168, lng: -3.7038 }],
+  ]);
+
+  async listNearby(input: ListNearbyOpenRequestsInput): Promise<NearbyOpenRequestItem[]> {
+    const limit = Math.min(100, Math.max(1, input.limit ?? 100));
+    const radiusKm = input.radiusKm ?? 50;
+    const withDistance: NearbyOpenRequestItem[] = [];
+
+    for (const li of this.listItems) {
+      if (this.deleted.has(li.id)) continue;
+      const coords = this.coordsById.get(li.id);
+      if (!coords) continue;
+      const distanceKm =
+        Math.round(haversineDistanceKm(input.lat, input.lng, coords.lat, coords.lng) * 10) / 10;
+      if (distanceKm > radiusKm) continue;
+      withDistance.push({
+        ...li,
+        publishedAtLabel: formatRelativePublishedAt(li.publishedAtSort),
+        locationLat: coords.lat,
+        locationLng: coords.lng,
+        distanceKm,
+      });
+    }
+
+    return withDistance.sort((a, b) => a.distanceKm - b.distanceKm).slice(0, limit);
+  }
 
   async list(pageRequest: PageRequest): Promise<PageResult<OpenRequestListItem>> {
     const sorted = [...this.listItems]
@@ -157,7 +187,7 @@ export class InMemoryOpenRequestsRepository implements OpenRequestsRepositoryPor
         storageKey: null,
       })),
     );
-    this.listItems.push({
+    const listItem: OpenRequestListItem = {
       id: input.id,
       imageUrl: input.imageUrl,
       imageAlt: input.imageAlt,
@@ -167,7 +197,13 @@ export class InMemoryOpenRequestsRepository implements OpenRequestsRepositoryPor
       publishedAtLabel: input.publishedAtLabel,
       budgetLabel: input.budgetLabel,
       publishedAtSort: input.publishedAtSort,
-    });
+    };
+    if (input.locationLat != null && input.locationLng != null) {
+      listItem.locationLat = input.locationLat;
+      listItem.locationLng = input.locationLng;
+      this.coordsById.set(input.id, { lat: input.locationLat, lng: input.locationLng });
+    }
+    this.listItems.push(listItem);
     return { ...detail };
   }
 
@@ -201,6 +237,15 @@ export class InMemoryOpenRequestsRepository implements OpenRequestsRepositoryPor
       if (patch.excerpt !== undefined) li.excerpt = patch.excerpt;
       if (patch.tags !== undefined) li.tags = [...patch.tags];
       if (patch.locationLabel !== undefined) li.locationLabel = patch.locationLabel;
+      if (patch.locationLat != null && patch.locationLng != null) {
+        li.locationLat = patch.locationLat;
+        li.locationLng = patch.locationLng;
+        this.coordsById.set(id, { lat: patch.locationLat, lng: patch.locationLng });
+      } else if (patch.locationLat === null || patch.locationLng === null) {
+        delete li.locationLat;
+        delete li.locationLng;
+        this.coordsById.delete(id);
+      }
       if (patch.publishedAtLabel !== undefined) li.publishedAtLabel = patch.publishedAtLabel;
       if (patch.budgetLabel !== undefined) li.budgetLabel = patch.budgetLabel;
       if (patch.imageUrl !== undefined) li.imageUrl = patch.imageUrl;
